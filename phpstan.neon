@@ -1,0 +1,17 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+
+parameters:
+    level: 6
+    paths:
+        - app
+        - database/seeders
+    excludePaths:
+        - vendor
+        - storage
+        - bootstrap/cache
+    reportUnmatchedIgnoredErrors: false
+    ignoreErrors:
+        - '#PHPDoc tag @use#'
+        - '#does not specify its types: TRelatedModel, TDeclaringModel#'
+        - '#does not specify its types: TModel#'

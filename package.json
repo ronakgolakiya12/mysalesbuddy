@@ -1,0 +1,46 @@
+{
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "build": "vite build",
+        "dev": "vite",
+        "type-check": "vue-tsc --noEmit",
+        "lint": "eslint resources/js --ext .ts,.vue",
+        "test": "vitest run",
+        "test:coverage": "vitest run --coverage",
+        "audit": "npm audit --audit-level=moderate"
+    },
+    "devDependencies": {
+        "@eslint/js": "^10.0.1",
+        "@tailwindcss/forms": "^0.5.11",
+        "@tailwindcss/typography": "^0.5.19",
+        "@typescript-eslint/eslint-plugin": "^8.60.0",
+        "@typescript-eslint/parser": "^8.60.0",
+        "@vitejs/plugin-vue": "^6.0.7",
+        "@vitest/coverage-v8": "^4.1.7",
+        "@vue/test-utils": "^2.4.10",
+        "autoprefixer": "^10.5.0",
+        "axios": "^1.16.1",
+        "concurrently": "^9.0.1",
+        "eslint": "^10.4.0",
+        "eslint-plugin-vue": "^10.9.1",
+        "jsdom": "^29.1.1",
+        "laravel-vite-plugin": "^1.2.0",
+        "postcss": "^8.5.15",
+        "tailwindcss": "^3.4.19",
+        "typescript": "^6.0.3",
+        "vite": "^6.0.11",
+        "vitest": "^4.1.7",
+        "vue-eslint-parser": "^10.4.0",
+        "vue-tsc": "^3.3.2"
+    },
+    "dependencies": {
+        "@vuepic/vue-datepicker": "^13.0.0",
+        "@vueuse/core": "^14.3.0",
+        "laravel-echo": "^2.3.4",
+        "pinia": "^3.0.4",
+        "pusher-js": "^8.5.0",
+        "vue": "^3.5.34",
+        "vue-router": "^4.6.4"
+    }
+}

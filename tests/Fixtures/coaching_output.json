@@ -1,0 +1,31 @@
+{
+    "overall_score": 8,
+    "summary": "Strong discovery conversation. Rep asked probing questions and uncovered key pain points. Next steps were clearly defined.",
+    "strengths": [
+        "Asked open-ended discovery questions early in the call",
+        "Reflected back the prospect's pain points to confirm understanding",
+        "Quantified impact with specific numbers"
+    ],
+    "improvements": [
+        "Reduce filler words ('um', 'like')",
+        "Improve transitions between discovery and solution segments",
+        "Slow down when explaining pricing"
+    ],
+    "questions_asked": [
+        "What is your biggest challenge with the current process?",
+        "How much time does your team spend on this weekly?",
+        "Who else would be involved in this decision?"
+    ],
+    "objections": [
+        {
+            "objection": "We already have a vendor for this.",
+            "response": "Acknowledged the existing relationship and asked about renewal timing.",
+            "resolved": true
+        }
+    ],
+    "next_steps": [
+        "Send proposal by Friday",
+        "Schedule follow-up demo with technical lead",
+        "Share customer case study"
+    ]
+}
