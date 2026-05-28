@@ -5,7 +5,17 @@ import type { CoachingAnalysis } from '@/types';
 
 export interface CoachingAnalysisCompletedEvent {
     meeting_id: string;
-    analysis: CoachingAnalysis;
+    analysis?: CoachingAnalysis | null;
+}
+
+function isCompleteAnalysis(value: unknown): value is CoachingAnalysis {
+    return (
+        typeof value === 'object'
+        && value !== null
+        && 'id' in value
+        && 'status' in value
+        && 'output_json' in value
+    );
 }
 
 export function useCoachingChannel(meetingId: Ref<string>): void {
@@ -21,9 +31,17 @@ export function useCoachingChannel(meetingId: Ref<string>): void {
         channelName = `user.${user.id}`;
         window.Echo.private(channelName).listen(
             '.CoachingAnalysisCompleted',
-            (event: CoachingAnalysisCompletedEvent) => {
-                if (event.meeting_id === meetingId.value) {
+            async (event: CoachingAnalysisCompletedEvent) => {
+                if (event.meeting_id !== meetingId.value) return;
+
+                // Prefer the inline analysis from the broadcast (instant UI),
+                // but fall back to a fresh fetch if the payload is missing the
+                // full object — e.g. when a worker is still running the old
+                // broadcastWith() that only emitted {analysis_id, mode, score}.
+                if (isCompleteAnalysis(event.analysis)) {
                     coaching.setAnalysis(event.analysis);
+                } else {
+                    await coaching.fetch(meetingId.value);
                 }
             },
         );

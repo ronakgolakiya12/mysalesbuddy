@@ -64,7 +64,6 @@ services:
       DB_HOST: postgres
       REDIS_HOST: redis
       PUSHER_HOST: soketi
-    command: php artisan horizon
     depends_on:
       - app
       - redis

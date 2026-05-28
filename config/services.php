@@ -41,9 +41,19 @@ return [
         'base_url' => env('RECALL_BASE_URL', 'https://eu-central-1.recall.ai/api/v1/'),
     ],
 
+    'ai' => [
+        'provider' => env('AI_PROVIDER', 'openai'),
+    ],
+
     'openai' => [
         'api_key' => env('OPENAI_API_KEY'),
         'model' => env('OPENAI_MODEL', 'gpt-4o'),
+        'timeout' => 55,
+    ],
+
+    'gemini' => [
+        'api_key' => env('GEMINI_API_KEY'),
+        'model' => env('GEMINI_MODEL', 'gemini-1.5-pro'),
         'timeout' => 55,
     ],
 

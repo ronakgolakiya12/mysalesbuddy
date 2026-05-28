@@ -38,11 +38,16 @@ export const coachingApi = {
     async rate(
         analysisId: string,
         payload: RateCoachingPayload,
-    ): Promise<CoachingRating> {
-        const { data } = await client.patch<ApiSuccessResponse<CoachingRating>>(
+    ): Promise<CoachingRating | null> {
+        const { data } = await client.patch<ApiSuccessResponse<CoachingRating> | ''>(
             `/coaching-analyses/${analysisId}/rate`,
             payload,
         );
-        return data.data;
+        // Backend currently returns the saved rating; guarded so an empty
+        // body (older API contract) doesn't corrupt the store with undefined.
+        if (data && typeof data === 'object' && 'data' in data) {
+            return data.data ?? null;
+        }
+        return null;
     },
 };
