@@ -16,17 +16,36 @@ use Illuminate\Support\Facades\Log;
 
 class WebhookController extends Controller
 {
+    /**
+     * Recall.ai webhook payload shape (Standard Webhooks delivery):
+     * {
+     *   "event": "bot.joining_call",
+     *   "data": {
+     *     "bot":  { "id": "<uuid>", "metadata": {} },
+     *     "data": { "code": "joining_call", "sub_code": null, "updated_at": "..." }
+     *   }
+     * }
+     *
+     * Legacy fallback (older webhook deliveries flatten the bot id):
+     *   "data": { "bot_id": "<uuid>", "status_code": "..." }
+     */
     public function recallWebhook(Request $request): JsonResponse
     {
         $event = (string) $request->input('event', '');
-        $botId = (string) $request->input('data.bot_id', '');
-        $data = $request->input('data', []);
-        $context = is_array($data) ? $data : [];
-        $statusCode = $request->input('data.status_code');
-        $statusCode = is_string($statusCode) ? $statusCode : null;
+        $botId = (string) $request->input('data.bot.id');
+        // sub_code carries the "why" for terminal events (e.g. 'meeting_not_started'
+        // on bot.call_ended). data.data.code echoes the event name and isn't useful
+        // as a block reason. Null for events that don't carry a sub-code.
+        $subCode = $request->input('data.data.sub_code');
+        $statusCode = is_string($subCode) && $subCode !== '' ? $subCode : null;
+        $innerData = $request->input('data.data', $request->input('data', []));
+        $context = is_array($innerData) ? $innerData : [];
 
         if ($botId === '') {
-            Log::warning('recall.webhook.missing_bot_id', ['event' => $event]);
+            Log::warning('recall.webhook.missing_bot_id', [
+                'event' => $event,
+                'payload_keys' => array_keys((array) $request->input('data', [])),
+            ]);
 
             return response()->json(['received' => true]);
         }

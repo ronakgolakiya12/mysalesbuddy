@@ -29,6 +29,15 @@ async function ensureCsrfCookie(): Promise<void> {
     return csrfPromise;
 }
 
+/**
+ * Invalidate the CSRF cache. Call this after any operation that rotates
+ * the session server-side (login, register, logout). The next mutating
+ * request will refetch a token bound to the current session.
+ */
+function resetCsrfCache(): void {
+    csrfPromise = null;
+}
+
 const MUTATING_METHODS = new Set(['post', 'put', 'patch', 'delete']);
 
 const client: AxiosInstance = axios.create({
@@ -45,8 +54,20 @@ const client: AxiosInstance = axios.create({
 
 client.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
     const method = (config.method ?? 'get').toLowerCase();
-    if (MUTATING_METHODS.has(method) && readXsrfCookie() === null) {
-        await ensureCsrfCookie();
+    if (MUTATING_METHODS.has(method)) {
+        // If the cache was invalidated (post login/logout) or we've never
+        // fetched, ensure a fresh CSRF cookie before the request fires.
+        if (csrfPromise === null || readXsrfCookie() === null) {
+            await ensureCsrfCookie();
+        }
+        // Belt-and-suspenders: also set X-XSRF-TOKEN explicitly from the
+        // freshly-read cookie. axios's built-in withXSRFToken should do
+        // this, but we override to guarantee the value matches the
+        // current cookie (not a stale closure).
+        const token = readXsrfCookie();
+        if (token) {
+            config.headers.set('X-XSRF-TOKEN', token);
+        }
     }
     return config;
 });
@@ -59,7 +80,7 @@ client.interceptors.response.use(
 
         if (status === 419 && config && !config._retry) {
             config._retry = true;
-            csrfPromise = null;
+            resetCsrfCache();
             await ensureCsrfCookie();
             return client.request(config);
         }
@@ -79,5 +100,5 @@ client.interceptors.response.use(
     },
 );
 
-export { ensureCsrfCookie };
+export { ensureCsrfCookie, resetCsrfCache };
 export default client;

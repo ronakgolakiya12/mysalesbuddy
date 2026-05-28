@@ -42,8 +42,12 @@ class NewNotification implements ShouldBroadcast
         return [
             'notification' => [
                 'id' => $this->notification->id,
+                'user_id' => $this->notification->user_id,
                 'type' => $this->notification->type,
                 'payload' => $this->notification->payload_json,
+                // Explicit null (not omitted) so the SPA's strict equality
+                // unread check (`read_at === null`) correctly counts it.
+                'read_at' => $this->notification->read_at?->toIso8601String(),
                 'created_at' => $this->notification->created_at?->toIso8601String(),
             ],
         ];

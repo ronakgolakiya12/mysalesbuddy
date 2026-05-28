@@ -58,10 +58,10 @@ class CalendarService
                 'title' => (string) ($event->getSummary() ?? 'Untitled event'),
                 'description' => $event->getDescription(),
                 'start_at' => $start !== null
-                    ? CarbonImmutable::parse((string) ($start->getDateTime() ?? $start->getDate()))->toIso8601String()
+                    ? CarbonImmutable::parse((string) ($start->getDateTime() ?? $start->getDate()))->utc()->toIso8601String()
                     : null,
                 'end_at' => $end !== null
-                    ? CarbonImmutable::parse((string) ($end->getDateTime() ?? $end->getDate()))->toIso8601String()
+                    ? CarbonImmutable::parse((string) ($end->getDateTime() ?? $end->getDate()))->utc()->toIso8601String()
                     : null,
                 'meeting_url' => $meetingUrl,
                 'provider' => $this->detectProvider($meetingUrl),

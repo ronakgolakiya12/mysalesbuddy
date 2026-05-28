@@ -94,7 +94,7 @@ function handleNavigate(): void {
                     </button>
                 </div>
 
-                <div v-if="store.loading && store.notifications.length === 0" class="space-y-2 px-4 py-4">
+                <div v-if="store.loading && store.unreadNotifications.length === 0" class="space-y-2 px-4 py-4">
                     <div v-for="i in 3" :key="i" class="flex gap-3">
                         <div class="h-9 w-9 animate-pulse rounded-full bg-gray-200" />
                         <div class="flex-1 space-y-2">
@@ -105,16 +105,21 @@ function handleNavigate(): void {
                 </div>
 
                 <div
-                    v-else-if="store.notifications.length === 0"
-                    class="px-4 py-8 text-center text-sm text-gray-500"
+                    v-else-if="store.unreadNotifications.length === 0"
+                    class="px-4 py-10 text-center text-sm text-gray-500"
                     data-testid="empty-state"
                 >
+                    <div class="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-emerald-50">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-5 w-5 text-emerald-600">
+                            <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" />
+                        </svg>
+                    </div>
                     You're all caught up.
                 </div>
 
                 <ul v-else class="max-h-96 divide-y divide-gray-100 overflow-y-auto">
                     <NotificationItem
-                        v-for="notification in store.notifications"
+                        v-for="notification in store.unreadNotifications"
                         :key="notification.id"
                         :notification="notification"
                         @dismiss="handleDismiss"

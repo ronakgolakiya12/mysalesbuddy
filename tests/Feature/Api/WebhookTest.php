@@ -54,10 +54,29 @@ class WebhookTest extends TestCase
         );
     }
 
+    /**
+     * Build a webhook body matching the current Recall.ai nested shape:
+     *   { event, data: { bot: { id }, data: { code, sub_code, updated_at } } }
+     */
+    private function recallBody(string $event, string $botId, ?string $subCode = null): string
+    {
+        return json_encode([
+            'event' => $event,
+            'data' => [
+                'bot' => ['id' => $botId, 'metadata' => []],
+                'data' => [
+                    'code' => str_replace('bot.', '', $event),
+                    'sub_code' => $subCode,
+                    'updated_at' => now()->toIso8601String(),
+                ],
+            ],
+        ]) ?: '';
+    }
+
     public function test_webhook_rejects_request_without_valid_signature(): void
     {
         Queue::fake();
-        $body = json_encode(['event' => 'bot.in_call', 'data' => ['bot_id' => 'bot_1']]) ?: '';
+        $body = $this->recallBody('bot.in_call', 'bot_1');
 
         $response = $this->callWebhook($body, ['msg_x', (string) time(), 'v1,invalidsignaturebase64==']);
 
@@ -68,7 +87,7 @@ class WebhookTest extends TestCase
     public function test_webhook_rejects_request_with_missing_signature_header(): void
     {
         Queue::fake();
-        $body = json_encode(['event' => 'bot.in_call', 'data' => ['bot_id' => 'bot_1']]) ?: '';
+        $body = $this->recallBody('bot.in_call', 'bot_1');
 
         $response = $this->callWebhook($body, null);
 
@@ -79,7 +98,7 @@ class WebhookTest extends TestCase
     public function test_webhook_dispatches_correct_job_for_in_call_event(): void
     {
         Queue::fake();
-        $body = json_encode(['event' => 'bot.in_call', 'data' => ['bot_id' => 'bot_42']]) ?: '';
+        $body = $this->recallBody('bot.in_call', 'bot_42');
 
         $response = $this->callWebhook($body, $this->svixHeaders($body));
 
@@ -93,10 +112,10 @@ class WebhookTest extends TestCase
     {
         Queue::fake();
 
-        $joining = json_encode(['event' => 'bot.joining_call', 'data' => ['bot_id' => 'bot_j']]) ?: '';
+        $joining = $this->recallBody('bot.joining_call', 'bot_j');
         $this->callWebhook($joining, $this->svixHeaders($joining))->assertStatus(200);
 
-        $ended = json_encode(['event' => 'bot.call_ended', 'data' => ['bot_id' => 'bot_e']]) ?: '';
+        $ended = $this->recallBody('bot.call_ended', 'bot_e');
         $this->callWebhook($ended, $this->svixHeaders($ended))->assertStatus(200);
 
         Queue::assertPushed(ProcessBotJoiningJob::class, fn ($j) => $j->botId === 'bot_j');
@@ -113,10 +132,7 @@ class WebhookTest extends TestCase
             'status' => \App\Support\Enums\MeetingStatus::BotJoining->value,
         ]);
 
-        $body = json_encode([
-            'event' => 'bot.call_ended',
-            'data' => ['bot_id' => 'bot_blocked', 'status_code' => 'meeting_not_started'],
-        ]) ?: '';
+        $body = $this->recallBody('bot.call_ended', 'bot_blocked', 'meeting_not_started');
 
         $this->callWebhook($body, $this->svixHeaders($body))->assertStatus(200);
 
@@ -144,10 +160,7 @@ class WebhookTest extends TestCase
             'status' => \App\Support\Enums\MeetingStatus::BotJoining->value,
         ]);
 
-        $body = json_encode([
-            'event' => 'bot.in_call',
-            'data' => ['bot_id' => 'bot_42'],
-        ]) ?: '';
+        $body = $this->recallBody('bot.in_call', 'bot_42');
 
         $this->callWebhook($body, $this->svixHeaders($body))->assertStatus(200);
 
@@ -166,10 +179,7 @@ class WebhookTest extends TestCase
             'status' => \App\Support\Enums\MeetingStatus::BotJoining->value,
         ]);
 
-        $body = json_encode([
-            'event' => 'bot.in_call',
-            'data' => ['bot_id' => 'bot_idem'],
-        ]) ?: '';
+        $body = $this->recallBody('bot.in_call', 'bot_idem');
 
         $this->callWebhook($body, $this->svixHeaders($body))->assertStatus(200);
         $firstStartedAt = \App\Models\Meeting::find($meeting->id)?->started_at;

@@ -21,31 +21,38 @@ const timestamp = computed(() => formatTimestamp(props.segment.start_ms));
     <div
         :data-timestamp-ms="segment.start_ms"
         :class="[
-            'pl-3 pr-2 pb-3',
-            isFirstForSpeaker ? ['pt-4', 'mt-1', 'border-l-2', speakerColor.border] : 'border-l-2 border-transparent',
+            'group relative border-l-2 pl-4 pr-2',
+            speakerColor.border,
+            isFirstForSpeaker ? 'pt-4 first:pt-2' : 'pt-1',
+            'pb-2',
         ]"
     >
-        <div v-if="isFirstForSpeaker" class="mb-1 flex items-center justify-between">
+        <div v-if="isFirstForSpeaker" class="mb-1.5 flex items-center justify-between gap-3">
             <span
                 :class="[
-                    'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold uppercase tracking-wide',
+                    'inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wider',
                     speakerColor.bg,
                     speakerColor.text,
                 ]"
             >
                 {{ segment.speaker_label }}
             </span>
-            <span class="text-xs text-gray-400 tabular-nums">{{ timestamp }}</span>
-        </div>
-        <div v-else class="mb-1 flex justify-end">
-            <span class="text-xs text-gray-400 tabular-nums">{{ timestamp }}</span>
+            <span class="shrink-0 text-xs text-gray-400 tabular-nums">{{ timestamp }}</span>
         </div>
 
-        <p class="text-sm leading-relaxed text-gray-800">
-            <template v-for="(chunk, i) in chunks" :key="i">
-                <mark v-if="chunk.highlight" class="bg-yellow-200 text-yellow-900 rounded px-0.5">{{ chunk.text }}</mark>
-                <template v-else>{{ chunk.text }}</template>
-            </template>
-        </p>
+        <div class="flex items-start gap-3">
+            <p class="flex-1 text-sm leading-relaxed text-gray-800">
+                <template v-for="(chunk, i) in chunks" :key="i">
+                    <mark v-if="chunk.highlight" class="rounded bg-yellow-200 px-0.5 text-yellow-900">{{ chunk.text }}</mark>
+                    <template v-else>{{ chunk.text }}</template>
+                </template>
+            </p>
+            <span
+                v-if="!isFirstForSpeaker"
+                class="shrink-0 pt-0.5 text-xs text-gray-300 tabular-nums opacity-0 transition-opacity group-hover:opacity-100"
+            >
+                {{ timestamp }}
+            </span>
+        </div>
     </div>
 </template>

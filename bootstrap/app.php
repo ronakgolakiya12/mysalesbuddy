@@ -117,4 +117,26 @@ return Application::configure(basePath: dirname(__DIR__))
                 'conflicting_meeting_id' => $e->conflictingMeetingId,
             ], 409);
         });
+
+        $exceptions->render(function (\App\Exceptions\CalendarNotConnectedException $e, Request $request) {
+            if (! $request->expectsJson()) {
+                return null;
+            }
+
+            return response()->json([
+                'message' => $e->getMessage(),
+                'error_code' => 'calendar_not_connected',
+            ], 422);
+        });
+
+        $exceptions->render(function (\App\Exceptions\CalendarTokenExpiredException $e, Request $request) {
+            if (! $request->expectsJson()) {
+                return null;
+            }
+
+            return response()->json([
+                'message' => $e->getMessage(),
+                'error_code' => 'calendar_token_expired',
+            ], 422);
+        });
     })->create();

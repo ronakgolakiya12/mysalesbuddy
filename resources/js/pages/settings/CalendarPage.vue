@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { oauthApi } from '@/api/oauth';
 import { useAuthStore } from '@/stores/auth';
 import { useOAuth } from '@/composables/useOAuth';
@@ -10,6 +10,8 @@ const { connectionStatus, handleOAuthReturn } = useOAuth();
 const successMessage = ref<string | null>(null);
 const errorMessage = ref<string | null>(null);
 const busy = ref(false);
+
+const isGoogleConnected = computed(() => connectionStatus.value.google);
 
 onMounted(async () => {
     const result = handleOAuthReturn();
@@ -55,8 +57,8 @@ async function disconnectGoogle(): Promise<void> {
         <div class="space-y-2">
             <h2 class="text-lg font-semibold text-gray-900">Calendar integrations</h2>
             <p class="text-sm text-gray-600">
-                Connect your calendar so MySalesBuddy can automatically dispatch the
-                notetaker bot to your upcoming sales meetings.
+                Connect your calendar so MySalesBuddy can pull your upcoming Google Meet
+                meetings and schedule the notetaker bot for you.
             </p>
         </div>
 
@@ -108,6 +110,20 @@ async function disconnectGoogle(): Promise<void> {
                     </button>
                 </div>
             </div>
+        </div>
+
+        <div
+            v-if="isGoogleConnected"
+            class="rounded-md border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-800"
+            role="note"
+            data-testid="calendar-helper-note"
+        >
+            Head to
+            <router-link
+                :to="{ name: 'meetings.index' }"
+                class="font-semibold underline hover:no-underline"
+            >Meetings</router-link>
+            and click "Pull from Calendar" to import your upcoming Google Meet events as scheduled meetings.
         </div>
 
         <div class="rounded-lg border border-gray-200 bg-gray-50 p-5 opacity-60">

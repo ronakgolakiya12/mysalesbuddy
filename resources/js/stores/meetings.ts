@@ -1,6 +1,13 @@
 import { ref } from 'vue';
 import { defineStore } from 'pinia';
+import { AxiosError } from 'axios';
 import { meetingsApi, type CreateMeetingPayload, type MeetingFilters } from '@/api/meetings';
+import {
+    calendarApi,
+    type CalendarSyncError,
+    type CalendarSyncErrorCode,
+    type CalendarSyncResult,
+} from '@/api/calendar';
 import type { Meeting, MeetingStatus, PaginationMeta } from '@/types';
 
 export interface MeetingStatusUpdateEvent {
@@ -16,6 +23,10 @@ export const useMeetingsStore = defineStore('meetings', () => {
     const filters = ref<MeetingFilters>({});
     const loading = ref(false);
     const detailLoading = ref(false);
+
+    const syncing = ref(false);
+    const syncResult = ref<CalendarSyncResult | null>(null);
+    const syncError = ref<CalendarSyncError | null>(null);
 
     async function fetchList(overrides: MeetingFilters = {}): Promise<void> {
         loading.value = true;
@@ -61,6 +72,54 @@ export const useMeetingsStore = defineStore('meetings', () => {
         return meeting;
     }
 
+    async function syncFromCalendar(): Promise<CalendarSyncResult | null> {
+        syncing.value = true;
+        syncResult.value = null;
+        syncError.value = null;
+        try {
+            const result = await calendarApi.sync();
+            syncResult.value = result;
+            if (result.imported.length > 0) {
+                await fetchList({ page: 1 });
+            }
+            return result;
+        } catch (err) {
+            syncError.value = parseSyncError(err);
+            return null;
+        } finally {
+            syncing.value = false;
+        }
+    }
+
+    function parseSyncError(err: unknown): CalendarSyncError {
+        if (err instanceof AxiosError) {
+            const data = err.response?.data as
+                | { message?: string; error_code?: string }
+                | undefined;
+            const rawCode = typeof data?.error_code === 'string' ? data.error_code : undefined;
+            const code: CalendarSyncErrorCode =
+                rawCode === 'calendar_not_connected' || rawCode === 'calendar_token_expired'
+                    ? rawCode
+                    : 'unknown';
+            return {
+                message:
+                    typeof data?.message === 'string' && data.message !== ''
+                        ? data.message
+                        : 'Failed to sync calendar.',
+                error_code: code,
+            };
+        }
+        return {
+            message: 'Failed to sync calendar.',
+            error_code: 'unknown',
+        };
+    }
+
+    function clearSync(): void {
+        syncResult.value = null;
+        syncError.value = null;
+    }
+
     function setFilters(next: MeetingFilters): void {
         filters.value = next;
     }
@@ -103,6 +162,9 @@ export const useMeetingsStore = defineStore('meetings', () => {
         meta.value = null;
         currentMeeting.value = null;
         filters.value = {};
+        syncing.value = false;
+        syncResult.value = null;
+        syncError.value = null;
     }
 
     return {
@@ -112,11 +174,16 @@ export const useMeetingsStore = defineStore('meetings', () => {
         filters,
         loading,
         detailLoading,
+        syncing,
+        syncResult,
+        syncError,
         fetchList,
         fetchOne,
         create,
         destroy,
         cancelDispatch,
+        syncFromCalendar,
+        clearSync,
         setFilters,
         clearFilters,
         handleStatusUpdate,

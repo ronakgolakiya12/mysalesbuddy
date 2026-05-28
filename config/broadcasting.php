@@ -12,13 +12,16 @@ return [
             'secret' => env('PUSHER_APP_SECRET'),
             'app_id' => env('PUSHER_APP_ID'),
             'options' => [
-                'host' => env('PUSHER_HOST', 'api-'.env('PUSHER_APP_CLUSTER', 'mt1').'.pusher.com'),
-                'port' => (int) env('PUSHER_PORT', 443),
-                'scheme' => env('PUSHER_SCHEME', 'https'),
-                'encrypted' => env('PUSHER_SCHEME', 'https') === 'https',
-                'useTLS' => env('PUSHER_SCHEME', 'https') === 'https',
-                'cluster' => env('PUSHER_APP_CLUSTER', 'mt1'),
-                'curl_options' => env('PUSHER_SCHEME', 'https') === 'http' ? [
+                // env() returns '' (not null) when the .env line is `PUSHER_HOST=`,
+                // so the default fallback never kicks in. Use ?: to treat empty
+                // string the same as unset → resolve to Pusher.com's regional host.
+                'host' => env('PUSHER_HOST') ?: 'api-'.(env('PUSHER_APP_CLUSTER') ?: 'mt1').'.pusher.com',
+                'port' => (int) (env('PUSHER_PORT') ?: 443),
+                'scheme' => env('PUSHER_SCHEME') ?: 'https',
+                'encrypted' => (env('PUSHER_SCHEME') ?: 'https') === 'https',
+                'useTLS' => (env('PUSHER_SCHEME') ?: 'https') === 'https',
+                'cluster' => env('PUSHER_APP_CLUSTER') ?: 'mt1',
+                'curl_options' => (env('PUSHER_SCHEME') ?: 'https') === 'http' ? [
                     CURLOPT_SSL_VERIFYHOST => 0,
                     CURLOPT_SSL_VERIFYPEER => 0,
                 ] : [],

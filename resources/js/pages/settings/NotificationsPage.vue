@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue';
-import { useDebounceFn } from '@vueuse/core';
+import { computed, onMounted, ref } from 'vue';
 import { notificationsApi } from '@/api/notifications';
 import type { NotificationPreferences, NotificationType } from '@/types';
 import ToggleSwitch from '@/components/ui/ToggleSwitch.vue';
+import PrimaryButton from '@/components/ui/PrimaryButton.vue';
 
 interface TypeMeta {
     key: NotificationType;
@@ -19,45 +19,80 @@ const NOTIFICATION_TYPES: TypeMeta[] = [
     { key: 'pdf_ready', label: 'Export ready', description: 'When your PDF export is available to download.' },
 ];
 
+const DEFAULTS: Record<NotificationType, { in_app: boolean; email: boolean }> = {
+    bot_blocked: { in_app: true, email: true },
+    transcript_failed: { in_app: true, email: true },
+    transcript_delayed: { in_app: true, email: false },
+    coaching_ready: { in_app: true, email: false },
+    pdf_ready: { in_app: true, email: true },
+};
+
+function normalise(input: Partial<NotificationPreferences> | null | undefined): NotificationPreferences {
+    const safe = (input ?? {}) as Record<string, { in_app?: boolean; email?: boolean } | undefined>;
+    return NOTIFICATION_TYPES.reduce((acc, type) => {
+        const entry = safe[type.key] ?? {};
+        acc[type.key] = {
+            in_app: typeof entry.in_app === 'boolean' ? entry.in_app : DEFAULTS[type.key].in_app,
+            email: typeof entry.email === 'boolean' ? entry.email : DEFAULTS[type.key].email,
+        };
+        return acc;
+    }, {} as NotificationPreferences);
+}
+
 const preferences = ref<NotificationPreferences | null>(null);
+const baseline = ref<NotificationPreferences | null>(null);
 const loading = ref(true);
 const saving = ref(false);
 const saveSuccess = ref(false);
-let initialised = false;
+const errorMessage = ref<string | null>(null);
+
+const hasChanges = computed(() => {
+    if (!preferences.value || !baseline.value) return false;
+    return JSON.stringify(preferences.value) !== JSON.stringify(baseline.value);
+});
 
 async function load(): Promise<void> {
     loading.value = true;
+    errorMessage.value = null;
     try {
-        preferences.value = await notificationsApi.getPreferences();
+        const remote = await notificationsApi.getPreferences();
+        const normalised = normalise(remote);
+        preferences.value = normalised;
+        baseline.value = JSON.parse(JSON.stringify(normalised));
+    } catch {
+        const fallback = normalise(null);
+        preferences.value = fallback;
+        baseline.value = JSON.parse(JSON.stringify(fallback));
     } finally {
         loading.value = false;
-        initialised = true;
     }
 }
 
-const persist = useDebounceFn(async (): Promise<void> => {
-    if (!preferences.value) return;
+async function save(): Promise<void> {
+    if (!preferences.value || saving.value) return;
     saving.value = true;
+    errorMessage.value = null;
     try {
-        preferences.value = await notificationsApi.updatePreferences(preferences.value);
+        const updated = await notificationsApi.updatePreferences(preferences.value);
+        const normalised = normalise(updated);
+        preferences.value = normalised;
+        baseline.value = JSON.parse(JSON.stringify(normalised));
         saveSuccess.value = true;
         setTimeout(() => {
             saveSuccess.value = false;
-        }, 2000);
+        }, 2500);
+    } catch {
+        errorMessage.value = 'Failed to save preferences. Please try again.';
     } finally {
         saving.value = false;
     }
-}, 800);
+}
 
-watch(
-    preferences,
-    () => {
-        if (initialised && preferences.value) {
-            void persist();
-        }
-    },
-    { deep: true },
-);
+function discardChanges(): void {
+    if (!baseline.value) return;
+    preferences.value = JSON.parse(JSON.stringify(baseline.value));
+    errorMessage.value = null;
+}
 
 onMounted(() => {
     void load();
@@ -70,7 +105,7 @@ onMounted(() => {
             <div>
                 <h2 class="text-lg font-semibold text-gray-900">Notification preferences</h2>
                 <p class="mt-1 text-sm text-gray-600">
-                    Choose how you want to be notified for each event. Changes are saved automatically.
+                    Choose how you want to be notified for each event. Click Save changes to apply.
                 </p>
             </div>
             <span
@@ -83,6 +118,14 @@ onMounted(() => {
                 Saved
             </span>
         </div>
+
+        <p
+            v-if="errorMessage"
+            class="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700"
+            role="alert"
+        >
+            {{ errorMessage }}
+        </p>
 
         <div v-if="loading" class="space-y-2">
             <div v-for="i in 5" :key="i" class="h-16 animate-pulse rounded-md bg-gray-100" />
@@ -124,6 +167,21 @@ onMounted(() => {
                     </tr>
                 </tbody>
             </table>
+        </div>
+
+        <div v-if="preferences" class="flex items-center justify-end gap-2">
+            <button
+                v-if="hasChanges"
+                type="button"
+                class="text-sm font-medium text-gray-600 hover:text-gray-800 disabled:opacity-50"
+                :disabled="saving"
+                @click="discardChanges"
+            >
+                Discard
+            </button>
+            <PrimaryButton :loading="saving" :disabled="!hasChanges" @click="save">
+                Save changes
+            </PrimaryButton>
         </div>
     </div>
 </template>

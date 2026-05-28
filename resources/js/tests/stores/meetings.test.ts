@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { AxiosError } from 'axios';
 import { createPinia, setActivePinia } from 'pinia';
 import { useMeetingsStore } from '@/stores/meetings';
 import { meetingsApi } from '@/api/meetings';
+import { calendarApi } from '@/api/calendar';
 import { MeetingProvider, MeetingStatus, type Meeting } from '@/types';
 
 vi.mock('@/api/meetings', () => ({
@@ -13,6 +15,24 @@ vi.mock('@/api/meetings', () => ({
         cancelDispatch: vi.fn(),
     },
 }));
+
+vi.mock('@/api/calendar', () => ({
+    calendarApi: {
+        sync: vi.fn(),
+    },
+}));
+
+function makeAxiosError(status: number, data: unknown): AxiosError {
+    const err = new AxiosError('Request failed');
+    (err as { response?: unknown }).response = {
+        data,
+        status,
+        statusText: '',
+        headers: {},
+        config: {},
+    };
+    return err;
+}
 
 function makeMeeting(overrides: Partial<Meeting> = {}): Meeting {
     return {
@@ -122,5 +142,98 @@ describe('meetings store', () => {
         expect(store.meetings).toEqual([]);
         expect(store.currentMeeting).toBeNull();
         expect(store.filters).toEqual({});
+    });
+
+    describe('syncFromCalendar', () => {
+        it('toggles syncing flag and stores the result on success', async () => {
+            (calendarApi.sync as ReturnType<typeof vi.fn>).mockResolvedValue({
+                imported: [],
+                existing: [],
+                skipped: [],
+            });
+            (meetingsApi.list as ReturnType<typeof vi.fn>).mockResolvedValue({
+                data: [],
+                meta: { current_page: 1, last_page: 1, per_page: 20, total: 0, from: null, to: null },
+            });
+
+            const store = useMeetingsStore();
+            expect(store.syncing).toBe(false);
+
+            const promise = store.syncFromCalendar();
+            expect(store.syncing).toBe(true);
+
+            const result = await promise;
+            expect(store.syncing).toBe(false);
+            expect(result).not.toBeNull();
+            expect(store.syncResult).not.toBeNull();
+            expect(store.syncError).toBeNull();
+        });
+
+        it('refreshes the meetings list when at least one meeting was imported', async () => {
+            (calendarApi.sync as ReturnType<typeof vi.fn>).mockResolvedValue({
+                imported: [
+                    {
+                        event_id: 'evt1',
+                        meeting_id: 'm-new-1',
+                        title: 'Imported',
+                        meeting_url: 'https://meet.google.com/xxx',
+                        scheduled_at: '2026-06-01T10:00:00Z',
+                    },
+                ],
+                existing: [],
+                skipped: [],
+            });
+            (meetingsApi.list as ReturnType<typeof vi.fn>).mockResolvedValue({
+                data: [makeMeeting({ id: 'm-new-1', title: 'Imported' })],
+                meta: { current_page: 1, last_page: 1, per_page: 20, total: 1, from: 1, to: 1 },
+            });
+
+            const store = useMeetingsStore();
+            await store.syncFromCalendar();
+
+            expect(meetingsApi.list).toHaveBeenCalled();
+            expect(store.meetings[0].id).toBe('m-new-1');
+        });
+
+        it('does not refresh the list when nothing was imported', async () => {
+            (calendarApi.sync as ReturnType<typeof vi.fn>).mockResolvedValue({
+                imported: [],
+                existing: [],
+                skipped: [{ event_id: 'e1', title: 'past', reason: 'event_in_past' }],
+            });
+
+            const store = useMeetingsStore();
+            await store.syncFromCalendar();
+
+            expect(meetingsApi.list).not.toHaveBeenCalled();
+            expect(store.syncResult?.skipped.length).toBe(1);
+        });
+
+        it('stores a parsed error with calendar_not_connected code on 422 response', async () => {
+            const err = makeAxiosError(422, {
+                message: 'Google Calendar is not connected.',
+                error_code: 'calendar_not_connected',
+            });
+            (calendarApi.sync as ReturnType<typeof vi.fn>).mockRejectedValue(err);
+
+            const store = useMeetingsStore();
+            const result = await store.syncFromCalendar();
+
+            expect(result).toBeNull();
+            expect(store.syncError?.error_code).toBe('calendar_not_connected');
+            expect(store.syncError?.message).toBe('Google Calendar is not connected.');
+            expect(store.syncResult).toBeNull();
+        });
+
+        it('falls back to unknown error_code when response does not provide one', async () => {
+            const err = makeAxiosError(502, { message: 'Failed to sync calendar events.' });
+            (calendarApi.sync as ReturnType<typeof vi.fn>).mockRejectedValue(err);
+
+            const store = useMeetingsStore();
+            await store.syncFromCalendar();
+
+            expect(store.syncError?.error_code).toBe('unknown');
+            expect(store.syncError?.message).toBe('Failed to sync calendar events.');
+        });
     });
 });

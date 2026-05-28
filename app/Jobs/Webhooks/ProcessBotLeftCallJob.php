@@ -82,7 +82,10 @@ class ProcessBotLeftCallJob implements ShouldQueue
             $endedAt = now();
             $meeting->ended_at = $endedAt;
             if ($meeting->started_at !== null) {
-                $meeting->duration_seconds = max(0, $endedAt->diffInSeconds($meeting->started_at));
+                // Carbon 3 returns a SIGNED diff; when started_at < endedAt
+                // the value is negative and max(0, ...) clamps it to zero.
+                // abs() handles both directions defensively.
+                $meeting->duration_seconds = (int) abs($endedAt->diffInSeconds($meeting->started_at));
             }
             $meeting->status = MeetingStatus::Processing;
             $meeting->save();

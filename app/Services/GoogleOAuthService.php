@@ -14,7 +14,11 @@ class GoogleOAuthService
 
     public function __construct(?GoogleClient $client = null)
     {
-        $this->client = $client ?? $this->buildDefaultClient();
+        try {
+            $this->client = $this->buildDefaultClient();
+        } catch (\Exception $e) {
+            $this->client = $client;
+        }
     }
 
     private function buildDefaultClient(): GoogleClient

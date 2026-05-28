@@ -12,6 +12,15 @@ export const useNotificationsStore = defineStore('notifications', () => {
         () => notifications.value.filter((n) => n.read_at === null).length,
     );
 
+    // Notifications visible in the bell dropdown — only the unread ones.
+    // Once a notification is read (individually dismissed or via mark-all-read)
+    // it disappears from this list. The full history can be added to a
+    // dedicated /notifications page later if needed; the bell is for
+    // actionable, unread items only.
+    const unreadNotifications = computed(
+        () => notifications.value.filter((n) => n.read_at === null),
+    );
+
     async function fetch(): Promise<void> {
         loading.value = true;
         error.value = null;
@@ -28,7 +37,14 @@ export const useNotificationsStore = defineStore('notifications', () => {
     function addNotification(notification: AppNotification): void {
         const exists = notifications.value.some((n) => n.id === notification.id);
         if (exists) return;
-        notifications.value = [notification, ...notifications.value];
+        // Defensive normalisation: WebSocket payloads may omit fields the API
+        // includes (read_at, user_id). Default missing read_at to null so the
+        // strict-equality unreadCount filter counts new arrivals correctly.
+        const normalised: AppNotification = {
+            ...notification,
+            read_at: notification.read_at ?? null,
+        };
+        notifications.value = [normalised, ...notifications.value];
     }
 
     async function markRead(id: string): Promise<void> {
@@ -75,6 +91,7 @@ export const useNotificationsStore = defineStore('notifications', () => {
 
     return {
         notifications,
+        unreadNotifications,
         loading,
         error,
         unreadCount,

@@ -100,7 +100,7 @@ vi.mock('@/api/prompt', () => ({
 
 vi.mock('@/api/calendar', () => ({
     calendarApi: {
-        listEvents: vi.fn().mockResolvedValue([]),
+        sync: vi.fn().mockResolvedValue({ imported: [], existing: [], skipped: [] }),
     },
 }));
 

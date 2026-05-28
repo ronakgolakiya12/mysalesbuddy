@@ -21,4 +21,6 @@ enum AuditEventType: string
     case PromptVersionCreated = 'prompt.version_created';
     case OauthConnected = 'oauth.connected';
     case PdfExported = 'pdf.exported';
+    case CalendarSynced = 'calendar.synced';
+    case ScopeResolved = 'scope.resolved';
 }

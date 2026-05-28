@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useDebounceFn, useMediaQuery } from '@vueuse/core';
 import { VueDatePicker } from '@vuepic/vue-datepicker';
 import '@vuepic/vue-datepicker/dist/main.css';
 import { useMeetingsStore } from '@/stores/meetings';
+import { useAuthStore } from '@/stores/auth';
 import { useMeetingChannel } from '@/composables/useMeetingChannel';
 import MeetingStatusBadge from '@/components/meetings/MeetingStatusBadge.vue';
 import MeetingProviderIcon from '@/components/meetings/MeetingProviderIcon.vue';
@@ -15,12 +16,16 @@ import type { MeetingStatus } from '@/types';
 
 const router = useRouter();
 const store = useMeetingsStore();
+const auth = useAuthStore();
 const isMobile = useMediaQuery('(max-width: 640px)');
 
 const search = ref('');
 const status = ref<MeetingStatus | ''>('');
 const dateRange = ref<[Date, Date] | null>(null);
 const modalOpen = ref(false);
+
+const showSuccessBanner = ref(false);
+let bannerTimer: ReturnType<typeof setTimeout> | null = null;
 
 const fromDate = computed(() =>
     dateRange.value ? toISODate(dateRange.value[0]) : '',
@@ -50,6 +55,13 @@ const statusOptions: Array<{ value: MeetingStatus | ''; label: string }> = [
 ];
 
 const hasFilters = computed(() => Boolean(search.value || status.value || dateRange.value));
+
+const isGoogleConnected = computed(() => auth.user?.has_google_calendar ?? false);
+
+const syncErrorReconnect = computed(() => {
+    const code = store.syncError?.error_code;
+    return code === 'calendar_not_connected' || code === 'calendar_token_expired';
+});
 
 const debouncedFetch = useDebounceFn(() => {
     void store.fetchList({
@@ -83,8 +95,44 @@ function formatDate(iso: string | null): string {
     return new Date(iso).toLocaleString();
 }
 
+async function handleSync(): Promise<void> {
+    if (store.syncing) return;
+    showSuccessBanner.value = false;
+    if (bannerTimer !== null) {
+        clearTimeout(bannerTimer);
+        bannerTimer = null;
+    }
+    const result = await store.syncFromCalendar();
+    if (result !== null && store.syncError === null) {
+        showSuccessBanner.value = true;
+        bannerTimer = setTimeout(() => {
+            showSuccessBanner.value = false;
+            bannerTimer = null;
+        }, 6000);
+    }
+}
+
+function dismissSuccessBanner(): void {
+    showSuccessBanner.value = false;
+    if (bannerTimer !== null) {
+        clearTimeout(bannerTimer);
+        bannerTimer = null;
+    }
+}
+
+function dismissSyncError(): void {
+    store.clearSync();
+}
+
 onMounted(() => {
     void store.fetchList({ page: 1 });
+});
+
+onBeforeUnmount(() => {
+    if (bannerTimer !== null) {
+        clearTimeout(bannerTimer);
+        bannerTimer = null;
+    }
 });
 </script>
 
@@ -95,9 +143,117 @@ onMounted(() => {
                 <h1 class="text-2xl font-semibold text-gray-900">Meetings</h1>
                 <p class="text-sm text-gray-500 mt-1">Your recorded calls and scheduled bot dispatches.</p>
             </div>
-            <PrimaryButton @click="modalOpen = true">
-                New Meeting
-            </PrimaryButton>
+            <div class="flex flex-wrap items-center gap-2">
+                <button
+                    v-if="isGoogleConnected"
+                    type="button"
+                    class="inline-flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50 disabled:opacity-50"
+                    :disabled="store.syncing"
+                    data-testid="pull-from-calendar"
+                    @click="handleSync"
+                >
+                    <svg
+                        v-if="store.syncing"
+                        class="h-4 w-4 animate-spin"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                    >
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                    </svg>
+                    <span>{{ store.syncing ? 'Syncing…' : 'Pull from Calendar' }}</span>
+                </button>
+                <router-link
+                    v-else
+                    :to="{ name: 'settings.calendar' }"
+                    class="inline-flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50"
+                    data-testid="connect-calendar-link"
+                >
+                    Connect Calendar
+                </router-link>
+                <PrimaryButton @click="modalOpen = true">
+                    New Meeting
+                </PrimaryButton>
+            </div>
+        </div>
+
+        <Transition
+            enter-active-class="transition-opacity duration-200"
+            enter-from-class="opacity-0"
+            enter-to-class="opacity-100"
+            leave-active-class="transition-opacity duration-200"
+            leave-from-class="opacity-100"
+            leave-to-class="opacity-0"
+        >
+            <div
+                v-if="showSuccessBanner && store.syncResult !== null"
+                class="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800"
+                role="status"
+                data-testid="sync-success-banner"
+            >
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <p class="font-medium">
+                            Imported {{ store.syncResult.imported.length }}
+                            new {{ store.syncResult.imported.length === 1 ? 'meeting' : 'meetings' }}
+                            from your calendar.
+                        </p>
+                        <p
+                            v-if="store.syncResult.existing.length > 0 || store.syncResult.skipped.length > 0"
+                            class="mt-1 text-xs text-emerald-700"
+                        >
+                            <span v-if="store.syncResult.existing.length > 0">
+                                {{ store.syncResult.existing.length }} already scheduled.
+                            </span>
+                            <span v-if="store.syncResult.skipped.length > 0">
+                                {{ store.syncResult.skipped.length }} skipped.
+                            </span>
+                        </p>
+                    </div>
+                    <button
+                        type="button"
+                        class="text-emerald-700 hover:text-emerald-900"
+                        aria-label="Dismiss"
+                        @click="dismissSuccessBanner"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4">
+                            <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </Transition>
+
+        <div
+            v-if="store.syncError !== null"
+            class="rounded-md border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800"
+            role="alert"
+            data-testid="sync-error-banner"
+        >
+            <div class="flex items-start justify-between gap-3">
+                <div>
+                    <p>{{ store.syncError.message }}</p>
+                    <router-link
+                        v-if="syncErrorReconnect"
+                        :to="{ name: 'settings.calendar' }"
+                        class="mt-1 inline-block text-xs font-semibold underline hover:no-underline"
+                        data-testid="sync-error-reconnect"
+                    >
+                        Reconnect Google Calendar
+                    </router-link>
+                </div>
+                <button
+                    type="button"
+                    class="text-rose-700 hover:text-rose-900"
+                    aria-label="Dismiss"
+                    @click="dismissSyncError"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4">
+                        <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+                    </svg>
+                </button>
+            </div>
         </div>
 
         <div class="grid grid-cols-1 gap-3 rounded-lg border border-gray-200 bg-white p-4 sm:grid-cols-4">

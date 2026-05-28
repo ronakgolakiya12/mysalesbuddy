@@ -2,6 +2,12 @@
 import { computed } from 'vue';
 import type { AppNotification } from '@/types';
 import NotificationIcon from '@/components/notifications/NotificationIcon.vue';
+import { useNow } from '@/composables/useNow';
+
+// Reactive "current time" — ticks every 30s so the relative-time computed
+// below re-runs and a notification that was "just now" 5 minutes ago
+// becomes "5m ago" without requiring a page reload.
+const now = useNow(30_000);
 
 interface Props {
     notification: AppNotification;
@@ -59,16 +65,26 @@ const message = computed<string>(() => {
 const timeAgo = computed<string>(() => {
     const created = new Date(props.notification.created_at).getTime();
     if (Number.isNaN(created)) return '';
-    const diffMs = Date.now() - created;
-    const diffMinutes = Math.floor(diffMs / 60000);
-    if (diffMinutes < 1) return 'just now';
-    if (diffMinutes < 60) return `${diffMinutes}m ago`;
+    const diffMs = now.value - created;
+
+    // Clamp negative diffs (server clock slightly ahead of client) to 0.
+    const safeDiff = Math.max(0, diffMs);
+    const diffSeconds = Math.floor(safeDiff / 1000);
+
+    if (diffSeconds < 60) return 'just now';
+    const diffMinutes = Math.floor(diffSeconds / 60);
+    if (diffMinutes < 60) return `${diffMinutes} min ago`;
     const diffHours = Math.floor(diffMinutes / 60);
-    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffHours < 24) return `${diffHours} hr ago`;
     const diffDays = Math.floor(diffHours / 24);
-    if (diffDays < 7) return `${diffDays}d ago`;
+    if (diffDays < 7) return `${diffDays} day${diffDays === 1 ? '' : 's'} ago`;
     return new Date(props.notification.created_at).toLocaleDateString();
 });
+
+// Full timestamp shown on hover so the user can always see the exact moment.
+const exactTime = computed<string>(() =>
+    new Date(props.notification.created_at).toLocaleString(),
+);
 
 const internalActionTo = computed<{ name: string; params: Record<string, string> } | null>(() => {
     if (props.notification.type === 'pdf_ready') return null;

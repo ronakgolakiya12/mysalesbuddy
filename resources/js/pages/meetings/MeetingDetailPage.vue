@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue';
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { useMeetingsStore } from '@/stores/meetings';
 import { useNotificationsStore } from '@/stores/notifications';
@@ -19,18 +19,47 @@ const toastMessage = ref<string | null>(null);
 let toastTimer: ReturnType<typeof setTimeout> | null = null;
 const exportQueued = ref(false);
 const exportError = ref<string | null>(null);
+// Timestamp (ms) at which the current export was kicked off. Only pdf_ready
+// notifications newer than this timestamp count as "the response to my click".
+const exportQueuedAt = ref<number | null>(null);
+// Fallback timer in case WebSocket delivery is down — without it, the button
+// would spin forever when Pusher/Soketi isn't connected.
+let exportFallbackTimer: ReturnType<typeof setTimeout> | null = null;
+const EXPORT_TIMEOUT_MS = 90_000;
+
+function resetExportState(): void {
+    exportQueued.value = false;
+    exportQueuedAt.value = null;
+    if (exportFallbackTimer !== null) {
+        clearTimeout(exportFallbackTimer);
+        exportFallbackTimer = null;
+    }
+}
 
 useMeetingChannel();
 
 async function handleExportPdf(): Promise<void> {
     if (exportQueued.value) return;
     exportQueued.value = true;
+    exportQueuedAt.value = Date.now();
     exportError.value = null;
+
+    // Safety net: if no pdf_ready notification arrives within 90s (e.g. the
+    // WebSocket is down OR the queue worker is stopped), restore the button
+    // so the user can retry or refresh.
+    if (exportFallbackTimer !== null) clearTimeout(exportFallbackTimer);
+    exportFallbackTimer = setTimeout(() => {
+        if (exportQueued.value) {
+            resetExportState();
+            toast.info('Export is still processing. Check the bell shortly or refresh the page.');
+        }
+    }, EXPORT_TIMEOUT_MS);
+
     try {
         await meetingsApi.exportPdf(String(route.params.id));
         toast.info("Export queued — you'll be notified when it's ready.");
     } catch {
-        exportQueued.value = false;
+        resetExportState();
         exportError.value = 'Export failed. Please try again.';
         toast.error('Export failed. Please try again.');
     }
@@ -39,15 +68,32 @@ async function handleExportPdf(): Promise<void> {
 watch(
     () => notificationsStore.notifications,
     (notifications) => {
-        const pdfReady = notifications.find(
-            (n) =>
-                n.type === 'pdf_ready' &&
-                n.payload.meeting_id === String(route.params.id),
-        );
-        if (pdfReady) exportQueued.value = false;
+        if (!exportQueued.value || exportQueuedAt.value === null) return;
+        // Only treat a pdf_ready notification as the response to THIS click
+        // if it was created AFTER the click. Otherwise pre-existing pdf_ready
+        // rows from previous exports would instantly reset the button.
+        const queuedAt = exportQueuedAt.value;
+        const meetingId = String(route.params.id);
+        const fresh = notifications.find((n) => {
+            if (n.type !== 'pdf_ready') return false;
+            if (n.payload.meeting_id !== meetingId) return false;
+            const createdAt = new Date(n.created_at).getTime();
+            return !Number.isNaN(createdAt) && createdAt >= queuedAt;
+        });
+        if (fresh) {
+            resetExportState();
+            toast.success('Your PDF export is ready.');
+        }
     },
     { deep: true },
 );
+
+onBeforeUnmount(() => {
+    if (exportFallbackTimer !== null) {
+        clearTimeout(exportFallbackTimer);
+        exportFallbackTimer = null;
+    }
+});
 
 function showToast(message: string): void {
     toastMessage.value = message;
