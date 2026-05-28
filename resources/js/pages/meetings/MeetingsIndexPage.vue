@@ -26,6 +26,27 @@ const cancellingId = ref<string | null>(null);
 const cancelTargetId = ref<string | null>(null);
 const confirmCancelOpen = ref(false);
 
+const deletingId = ref<string | null>(null);
+const deleteTargetId = ref<string | null>(null);
+const confirmDeleteOpen = ref(false);
+
+const ACTIVE_STATUSES: ReadonlyArray<MeetingStatus> = [
+    'bot_joining',
+    'recording',
+    'processing',
+] as ReadonlyArray<MeetingStatus>;
+
+function isDeletable(status: MeetingStatus): boolean {
+    return !ACTIVE_STATUSES.includes(status);
+}
+
+function scoreClasses(score: number | null | undefined): string {
+    if (score === null || score === undefined) return 'bg-gray-100 text-gray-400';
+    if (score >= 7) return 'bg-emerald-100 text-emerald-700';
+    if (score >= 5) return 'bg-amber-100 text-amber-700';
+    return 'bg-red-100 text-red-700';
+}
+
 const search = ref('');
 const status = ref<MeetingStatus | ''>('');
 const dateRange = ref<[Date, Date] | null>(null);
@@ -142,6 +163,44 @@ function dismissCancelDialog(): void {
     if (cancellingId.value !== null) return;
     confirmCancelOpen.value = false;
     cancelTargetId.value = null;
+}
+
+function deleteMeeting(id: string): void {
+    if (deletingId.value !== null) return;
+    deleteTargetId.value = id;
+    confirmDeleteOpen.value = true;
+}
+
+async function confirmDeleteMeeting(): Promise<void> {
+    const id = deleteTargetId.value;
+    if (!id) {
+        confirmDeleteOpen.value = false;
+        return;
+    }
+    deletingId.value = id;
+    try {
+        await store.destroy(id);
+        toast.success('Meeting deleted.');
+    } catch (err) {
+        const response = (err as { response?: { status?: number; data?: { message?: string } } })?.response;
+        const serverMessage = response?.data?.message;
+        toast.error(
+            serverMessage
+                ?? (response?.status && response.status >= 400 && response.status < 500
+                    ? 'This meeting can’t be deleted right now.'
+                    : 'Could not delete the meeting. Please try again.'),
+        );
+    } finally {
+        deletingId.value = null;
+        confirmDeleteOpen.value = false;
+        deleteTargetId.value = null;
+    }
+}
+
+function dismissDeleteDialog(): void {
+    if (deletingId.value !== null) return;
+    confirmDeleteOpen.value = false;
+    deleteTargetId.value = null;
 }
 
 function formatDate(iso: string | null): string {
@@ -369,6 +428,7 @@ onBeforeUnmount(() => {
                         <th scope="col" class="px-4 py-3">Title</th>
                         <th scope="col" class="px-4 py-3">Provider</th>
                         <th scope="col" class="px-4 py-3">Status</th>
+                        <th scope="col" class="px-4 py-3">Score</th>
                         <th scope="col" class="px-4 py-3">Scheduled</th>
                         <th scope="col" class="px-4 py-3">Created</th>
                         <th scope="col" class="px-4 py-3 text-right">Actions</th>
@@ -386,29 +446,37 @@ onBeforeUnmount(() => {
                             <MeetingProviderIcon :provider="m.provider" size="sm" />
                         </td>
                         <td class="px-4 py-3"><MeetingStatusBadge :status="m.status" /></td>
+                        <td class="px-4 py-3">
+                            <span
+                                :class="['inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums', scoreClasses(m.overall_score)]"
+                            >
+                                {{ m.overall_score !== null && m.overall_score !== undefined ? `${m.overall_score}/10` : '—' }}
+                            </span>
+                        </td>
                         <td class="px-4 py-3 text-gray-600">{{ formatDate(m.scheduled_at) }}</td>
                         <td class="px-4 py-3 text-gray-600">{{ formatDate(m.created_at) }}</td>
                         <td class="px-4 py-3 text-right" @click.stop>
-                            <button
-                                v-if="m.status === 'scheduled'"
-                                type="button"
-                                :disabled="cancellingId === m.id"
-                                class="inline-flex items-center gap-1 rounded-md border border-red-200 bg-white px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                                @click="cancelMeeting(m.id)"
-                            >
-                                <svg
-                                    v-if="cancellingId === m.id"
-                                    class="h-3 w-3 animate-spin"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    aria-hidden="true"
+                            <div class="inline-flex items-center justify-end gap-2">
+                                <button
+                                    v-if="m.status === 'scheduled'"
+                                    type="button"
+                                    :disabled="cancellingId === m.id"
+                                    class="inline-flex items-center gap-1 rounded-md border border-amber-200 bg-white px-2 py-1 text-xs font-medium text-amber-700 hover:bg-amber-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    @click="cancelMeeting(m.id)"
                                 >
-                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-                                </svg>
-                                {{ cancellingId === m.id ? 'Cancelling…' : 'Cancel' }}
-                            </button>
-                            <span v-else class="text-xs text-gray-300">—</span>
+                                    {{ cancellingId === m.id ? 'Cancelling…' : 'Cancel' }}
+                                </button>
+                                <button
+                                    v-if="isDeletable(m.status)"
+                                    type="button"
+                                    :disabled="deletingId === m.id"
+                                    class="inline-flex items-center gap-1 rounded-md border border-red-200 bg-white px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    @click="deleteMeeting(m.id)"
+                                >
+                                    {{ deletingId === m.id ? 'Deleting…' : 'Delete' }}
+                                </button>
+                                <span v-if="!isDeletable(m.status) && m.status !== 'scheduled'" class="text-xs text-gray-300">—</span>
+                            </div>
                         </td>
                     </tr>
                 </tbody>
@@ -433,16 +501,32 @@ onBeforeUnmount(() => {
                     <div class="flex items-center gap-2">
                         <MeetingProviderIcon :provider="m.provider" size="sm" />
                         <span>{{ formatDate(m.created_at) }}</span>
+                        <span
+                            :class="['inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold tabular-nums', scoreClasses(m.overall_score)]"
+                        >
+                            {{ m.overall_score !== null && m.overall_score !== undefined ? `${m.overall_score}/10` : '—' }}
+                        </span>
                     </div>
-                    <button
-                        v-if="m.status === 'scheduled'"
-                        type="button"
-                        :disabled="cancellingId === m.id"
-                        class="inline-flex items-center gap-1 rounded-md border border-red-200 bg-white px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                        @click.stop="cancelMeeting(m.id)"
-                    >
-                        {{ cancellingId === m.id ? 'Cancelling…' : 'Cancel' }}
-                    </button>
+                    <div class="flex items-center gap-2" @click.stop>
+                        <button
+                            v-if="m.status === 'scheduled'"
+                            type="button"
+                            :disabled="cancellingId === m.id"
+                            class="inline-flex items-center gap-1 rounded-md border border-amber-200 bg-white px-2 py-1 text-xs font-medium text-amber-700 hover:bg-amber-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                            @click="cancelMeeting(m.id)"
+                        >
+                            {{ cancellingId === m.id ? 'Cancelling…' : 'Cancel' }}
+                        </button>
+                        <button
+                            v-if="isDeletable(m.status)"
+                            type="button"
+                            :disabled="deletingId === m.id"
+                            class="inline-flex items-center gap-1 rounded-md border border-red-200 bg-white px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                            @click="deleteMeeting(m.id)"
+                        >
+                            {{ deletingId === m.id ? 'Deleting…' : 'Delete' }}
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -470,6 +554,18 @@ onBeforeUnmount(() => {
             :loading="cancellingId !== null"
             @confirm="confirmCancelMeeting"
             @cancel="dismissCancelDialog"
+        />
+
+        <ConfirmDialog
+            :open="confirmDeleteOpen"
+            title="Delete this meeting?"
+            message="The meeting will be removed from your list. It is recoverable for 90 days, after which it is permanently purged along with its transcript and coaching analysis."
+            confirm-text="Delete"
+            cancel-text="Keep it"
+            variant="danger"
+            :loading="deletingId !== null"
+            @confirm="confirmDeleteMeeting"
+            @cancel="dismissDeleteDialog"
         />
     </div>
 </template>

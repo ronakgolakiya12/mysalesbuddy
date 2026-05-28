@@ -41,7 +41,30 @@ class MeetingListResource extends ApiResource
             'duration_seconds' => $meeting->duration_seconds !== null
                 ? (int) $meeting->duration_seconds
                 : null,
+            'overall_score' => $this->resolveOverallScore($meeting),
             'created_at' => $meeting->created_at?->toIso8601String(),
         ];
+    }
+
+    private function resolveOverallScore(Meeting $meeting): ?int
+    {
+        if (! $meeting->relationLoaded('latestCoachingAnalysis')) {
+            return null;
+        }
+        $analysis = $meeting->latestCoachingAnalysis;
+        if ($analysis === null || $analysis->completed_at === null || $analysis->overall_score === null) {
+            return null;
+        }
+
+        $score = (int) $analysis->overall_score;
+
+        // Historic rows from before the 0-100 → 1-10 scale change may still
+        // carry legacy values. Treat anything > 10 as a 0-100 score and
+        // normalise; otherwise return as-is.
+        if ($score > 10) {
+            $score = (int) round($score / 10);
+        }
+
+        return max(1, min(10, $score));
     }
 }

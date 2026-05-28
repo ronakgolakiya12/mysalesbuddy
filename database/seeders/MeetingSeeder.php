@@ -36,7 +36,7 @@ class MeetingSeeder extends Seeder
             'duration_seconds' => 1680,
         ]);
         $this->seedTranscript($readyOne->id);
-        $this->seedAnalysis($readyOne->id, $promptVersion?->id, 82);
+        $this->seedAnalysis($readyOne->id, $promptVersion?->id, 8);
 
         $readyTwo = Meeting::create([
             'user_id' => $user->id,
@@ -52,7 +52,7 @@ class MeetingSeeder extends Seeder
             'duration_seconds' => 2520,
         ]);
         $this->seedTranscript($readyTwo->id);
-        $this->seedAnalysis($readyTwo->id, $promptVersion?->id, 74);
+        $this->seedAnalysis($readyTwo->id, $promptVersion?->id, 7);
 
         Meeting::create([
             'user_id' => $user->id,

@@ -30,7 +30,7 @@ class PurgeSoftDeletedMeetingsJob implements ShouldQueue
 
     public function handle(): void
     {
-        $cutoff = now()->subDays(30);
+        $cutoff = now()->subDays(90);
 
         Meeting::onlyTrashed()
             ->where('deleted_at', '<=', $cutoff)

@@ -31,7 +31,11 @@ class MeetingController extends Controller
         $user = $request->user();
         abort_unless($user !== null, 401);
 
-        $query = Meeting::query()->where('user_id', $user->id);
+        $query = Meeting::query()
+            ->where('user_id', $user->id)
+            ->with(['latestCoachingAnalysis' => function ($q): void {
+                $q->select('id', 'meeting_id', 'overall_score', 'completed_at', 'created_at');
+            }]);
 
         $status = (string) $request->query('status', '');
         if ($status !== '') {

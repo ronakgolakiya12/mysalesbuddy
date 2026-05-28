@@ -59,6 +59,7 @@ export interface Meeting {
     ended_at: string | null;
     duration_seconds: number | null;
     duration_formatted?: string | null;
+    overall_score?: number | null;
     transcript_segments?: TranscriptSegment[];
     latest_coaching_analysis?: {
         id: string;
