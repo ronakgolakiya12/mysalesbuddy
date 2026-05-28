@@ -7,17 +7,24 @@ import '@vuepic/vue-datepicker/dist/main.css';
 import { useMeetingsStore } from '@/stores/meetings';
 import { useAuthStore } from '@/stores/auth';
 import { useMeetingChannel } from '@/composables/useMeetingChannel';
+import { useToast } from '@/composables/useToast';
 import MeetingStatusBadge from '@/components/meetings/MeetingStatusBadge.vue';
 import MeetingProviderIcon from '@/components/meetings/MeetingProviderIcon.vue';
 import NewMeetingModal from '@/components/meetings/NewMeetingModal.vue';
 import PaginationBar from '@/components/ui/PaginationBar.vue';
 import PrimaryButton from '@/components/ui/PrimaryButton.vue';
+import ConfirmDialog from '@/components/ui/ConfirmDialog.vue';
 import type { MeetingStatus } from '@/types';
 
 const router = useRouter();
 const store = useMeetingsStore();
 const auth = useAuthStore();
+const toast = useToast();
 const isMobile = useMediaQuery('(max-width: 640px)');
+
+const cancellingId = ref<string | null>(null);
+const cancelTargetId = ref<string | null>(null);
+const confirmCancelOpen = ref(false);
 
 const search = ref('');
 const status = ref<MeetingStatus | ''>('');
@@ -88,6 +95,44 @@ function goToMeeting(id: string): void {
 
 function changePage(page: number): void {
     void store.fetchList({ page });
+}
+
+function cancelMeeting(id: string): void {
+    if (cancellingId.value !== null) return;
+    cancelTargetId.value = id;
+    confirmCancelOpen.value = true;
+}
+
+async function confirmCancelMeeting(): Promise<void> {
+    const id = cancelTargetId.value;
+    if (!id) {
+        confirmCancelOpen.value = false;
+        return;
+    }
+    cancellingId.value = id;
+    try {
+        await store.cancelDispatch(id);
+        toast.success('Scheduled meeting cancelled.');
+    } catch (err) {
+        const response = (err as { response?: { status?: number; data?: { message?: string } } })?.response;
+        const serverMessage = response?.data?.message;
+        toast.error(
+            serverMessage
+                ?? (response?.status && response.status >= 400 && response.status < 500
+                    ? 'Cancellation is no longer allowed for this meeting.'
+                    : 'Could not cancel the meeting. Please try again.'),
+        );
+    } finally {
+        cancellingId.value = null;
+        confirmCancelOpen.value = false;
+        cancelTargetId.value = null;
+    }
+}
+
+function dismissCancelDialog(): void {
+    if (cancellingId.value !== null) return;
+    confirmCancelOpen.value = false;
+    cancelTargetId.value = null;
 }
 
 function formatDate(iso: string | null): string {
@@ -317,6 +362,7 @@ onBeforeUnmount(() => {
                         <th scope="col" class="px-4 py-3">Status</th>
                         <th scope="col" class="px-4 py-3">Scheduled</th>
                         <th scope="col" class="px-4 py-3">Created</th>
+                        <th scope="col" class="px-4 py-3 text-right">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200">
@@ -333,28 +379,63 @@ onBeforeUnmount(() => {
                         <td class="px-4 py-3"><MeetingStatusBadge :status="m.status" /></td>
                         <td class="px-4 py-3 text-gray-600">{{ formatDate(m.scheduled_at) }}</td>
                         <td class="px-4 py-3 text-gray-600">{{ formatDate(m.created_at) }}</td>
+                        <td class="px-4 py-3 text-right" @click.stop>
+                            <button
+                                v-if="m.status === 'scheduled'"
+                                type="button"
+                                :disabled="cancellingId === m.id"
+                                class="inline-flex items-center gap-1 rounded-md border border-red-200 bg-white px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                @click="cancelMeeting(m.id)"
+                            >
+                                <svg
+                                    v-if="cancellingId === m.id"
+                                    class="h-3 w-3 animate-spin"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    aria-hidden="true"
+                                >
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                                </svg>
+                                {{ cancellingId === m.id ? 'Cancelling…' : 'Cancel' }}
+                            </button>
+                            <span v-else class="text-xs text-gray-300">—</span>
+                        </td>
                     </tr>
                 </tbody>
             </table>
         </div>
 
         <div v-else class="space-y-3">
-            <button
+            <div
                 v-for="m in store.meetings"
                 :key="m.id"
-                type="button"
-                class="flex w-full flex-col gap-2 rounded-lg border border-gray-200 bg-white p-4 text-left hover:border-indigo-300"
+                role="button"
+                tabindex="0"
+                class="flex w-full cursor-pointer flex-col gap-2 rounded-lg border border-gray-200 bg-white p-4 text-left hover:border-indigo-300"
                 @click="goToMeeting(m.id)"
+                @keydown.enter="goToMeeting(m.id)"
             >
                 <div class="flex items-center justify-between gap-2">
                     <span class="font-medium text-gray-900">{{ m.title || 'Untitled meeting' }}</span>
                     <MeetingStatusBadge :status="m.status" />
                 </div>
-                <div class="flex items-center gap-2 text-xs text-gray-500">
-                    <MeetingProviderIcon :provider="m.provider" size="sm" />
-                    <span>{{ formatDate(m.created_at) }}</span>
+                <div class="flex items-center justify-between gap-2 text-xs text-gray-500">
+                    <div class="flex items-center gap-2">
+                        <MeetingProviderIcon :provider="m.provider" size="sm" />
+                        <span>{{ formatDate(m.created_at) }}</span>
+                    </div>
+                    <button
+                        v-if="m.status === 'scheduled'"
+                        type="button"
+                        :disabled="cancellingId === m.id"
+                        class="inline-flex items-center gap-1 rounded-md border border-red-200 bg-white px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        @click.stop="cancelMeeting(m.id)"
+                    >
+                        {{ cancellingId === m.id ? 'Cancelling…' : 'Cancel' }}
+                    </button>
                 </div>
-            </button>
+            </div>
         </div>
 
         <PaginationBar
@@ -368,6 +449,18 @@ onBeforeUnmount(() => {
             :open="modalOpen"
             @close="modalOpen = false"
             @created="goToMeeting($event.id)"
+        />
+
+        <ConfirmDialog
+            :open="confirmCancelOpen"
+            title="Cancel scheduled meeting?"
+            message="The bot will not be dispatched. This can't be undone."
+            confirm-text="Yes, cancel"
+            cancel-text="Keep it"
+            variant="danger"
+            :loading="cancellingId !== null"
+            @confirm="confirmCancelMeeting"
+            @cancel="dismissCancelDialog"
         />
     </div>
 </template>

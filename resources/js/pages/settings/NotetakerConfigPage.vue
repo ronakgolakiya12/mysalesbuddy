@@ -120,6 +120,7 @@ async function onFileChange(event: Event): Promise<void> {
                         v-model="introMessage"
                         rows="3"
                         :maxlength="MAX_INTRO"
+                        placeholder="Sent in the meeting chat when the bot joins…"
                         class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                     />
                     <div class="mt-1 flex items-center justify-between text-xs">

@@ -10,6 +10,7 @@ import MeetingStatusBadge from '@/components/meetings/MeetingStatusBadge.vue';
 import MeetingProviderIcon from '@/components/meetings/MeetingProviderIcon.vue';
 import TranscriptPanel from '@/components/transcript/TranscriptPanel.vue';
 import CoachingPanel from '@/components/coaching/CoachingPanel.vue';
+import ConfirmDialog from '@/components/ui/ConfirmDialog.vue';
 
 const route = useRoute();
 const store = useMeetingsStore();
@@ -19,6 +20,8 @@ const toastMessage = ref<string | null>(null);
 let toastTimer: ReturnType<typeof setTimeout> | null = null;
 const exportQueued = ref(false);
 const exportError = ref<string | null>(null);
+const cancelling = ref(false);
+const cancelError = ref<string | null>(null);
 // Timestamp (ms) at which the current export was kicked off. Only pdf_ready
 // notifications newer than this timestamp count as "the response to my click".
 const exportQueuedAt = ref<number | null>(null);
@@ -115,6 +118,41 @@ function formatDateTime(iso: string | null | undefined): string {
     return new Date(iso).toLocaleString();
 }
 
+const confirmCancelOpen = ref(false);
+
+function handleCancelDispatch(): void {
+    const meeting = store.currentMeeting;
+    if (!meeting || cancelling.value) return;
+    if (meeting.status !== 'scheduled') return;
+    confirmCancelOpen.value = true;
+}
+
+async function confirmCancelDispatch(): Promise<void> {
+    const meeting = store.currentMeeting;
+    if (!meeting) {
+        confirmCancelOpen.value = false;
+        return;
+    }
+    cancelling.value = true;
+    cancelError.value = null;
+    try {
+        await store.cancelDispatch(meeting.id);
+        toast.success('Scheduled meeting cancelled.');
+        confirmCancelOpen.value = false;
+    } catch (err) {
+        const response = (err as { response?: { status?: number; data?: { message?: string } } })?.response;
+        const serverMessage = response?.data?.message;
+        cancelError.value = serverMessage
+            ?? (response?.status && response.status >= 400 && response.status < 500
+                ? 'Cancellation is no longer allowed for this meeting.'
+                : 'Could not cancel the meeting. Please try again.');
+        toast.error(cancelError.value);
+        confirmCancelOpen.value = false;
+    } finally {
+        cancelling.value = false;
+    }
+}
+
 function handleScrollToTimestamp(ms: number): void {
     if (typeof document === 'undefined') return;
     const nodes = document.querySelectorAll<HTMLElement>('[data-timestamp-ms]');
@@ -209,9 +247,42 @@ onMounted(async () => {
                                 </svg>
                                 <span>{{ exportQueued ? 'Exporting…' : 'Export PDF' }}</span>
                             </button>
+                            <button
+                                v-if="store.currentMeeting.status === 'scheduled'"
+                                type="button"
+                                :disabled="cancelling"
+                                class="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                @click="handleCancelDispatch"
+                                data-testid="cancel-dispatch"
+                            >
+                                <svg
+                                    v-if="cancelling"
+                                    class="h-4 w-4 animate-spin"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    aria-hidden="true"
+                                >
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                                </svg>
+                                <svg
+                                    v-else
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="2"
+                                    class="h-4 w-4"
+                                    aria-hidden="true"
+                                >
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                                <span>{{ cancelling ? 'Cancelling…' : 'Cancel dispatch' }}</span>
+                            </button>
                         </div>
                     </div>
                     <p v-if="exportError" class="mt-2 text-xs text-red-600">{{ exportError }}</p>
+                    <p v-if="cancelError" class="mt-2 text-xs text-red-600">{{ cancelError }}</p>
                     <dl class="mt-4 grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
                         <div>
                             <dt class="text-gray-500">Scheduled</dt>
@@ -250,5 +321,17 @@ onMounted(async () => {
         <div v-else class="rounded-lg border border-gray-200 bg-white p-6 text-sm text-gray-500">
             Meeting not found.
         </div>
+
+        <ConfirmDialog
+            :open="confirmCancelOpen"
+            title="Cancel scheduled meeting?"
+            message="The bot will not be dispatched. This can't be undone."
+            confirm-text="Yes, cancel"
+            cancel-text="Keep it"
+            variant="danger"
+            :loading="cancelling"
+            @confirm="confirmCancelDispatch"
+            @cancel="confirmCancelOpen = false"
+        />
     </div>
 </template>

@@ -154,9 +154,29 @@ class MeetingController extends Controller
             return $this->error('Only scheduled meetings can be cancelled.', 422);
         }
 
-        $createdAt = $meeting->created_at;
-        if ($createdAt !== null && $createdAt->diffInSeconds(now()) > 30) {
-            return $this->error('Cancellation window has expired (30 seconds).', 422);
+        // If the bot has already been registered with Recall.ai there's no
+        // safe way to roll it back from here — the auto-join cron beat us.
+        if ($meeting->recall_bot_id !== null) {
+            return $this->error('Bot has already been dispatched and cannot be cancelled here.', 422);
+        }
+
+        $now = now();
+        if ($meeting->scheduled_at !== null) {
+            $cutoff = $now->copy()->addSeconds(30);
+            if ($meeting->scheduled_at->lte($cutoff)) {
+                return $this->error(
+                    'Too close to the scheduled start time. Cancel at least 30 seconds before the meeting begins.',
+                    422,
+                );
+            }
+        } else {
+            $createdAt = $meeting->created_at;
+            if ($createdAt !== null && abs($createdAt->diffInSeconds($now)) > 30) {
+                return $this->error(
+                    'Cancellation window has expired (30 seconds after creation for immediate meetings).',
+                    422,
+                );
+            }
         }
 
         $user = $request->user();
