@@ -6,6 +6,7 @@ export const enum MeetingStatus {
     Ready = 'ready',
     Failed = 'failed',
     Cancelled = 'cancelled',
+    Delayed = 'delayed',
 }
 
 export const enum MeetingProvider {

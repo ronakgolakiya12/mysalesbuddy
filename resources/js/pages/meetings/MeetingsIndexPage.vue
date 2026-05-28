@@ -56,6 +56,7 @@ const statusOptions: Array<{ value: MeetingStatus | ''; label: string }> = [
     { value: 'bot_joining' as MeetingStatus, label: 'Bot Joining' },
     { value: 'recording' as MeetingStatus, label: 'Recording' },
     { value: 'processing' as MeetingStatus, label: 'Processing' },
+    { value: 'delayed' as MeetingStatus, label: 'Delayed' },
     { value: 'ready' as MeetingStatus, label: 'Ready' },
     { value: 'failed' as MeetingStatus, label: 'Failed' },
     { value: 'cancelled' as MeetingStatus, label: 'Cancelled' },

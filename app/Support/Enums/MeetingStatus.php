@@ -13,6 +13,7 @@ enum MeetingStatus: string
     case Ready = 'ready';
     case Failed = 'failed';
     case Cancelled = 'cancelled';
+    case Delayed = 'delayed';
 
     public function label(): string
     {
@@ -24,6 +25,7 @@ enum MeetingStatus: string
             self::Ready => 'Ready',
             self::Failed => 'Failed',
             self::Cancelled => 'Cancelled',
+            self::Delayed => 'Delayed',
         };
     }
 

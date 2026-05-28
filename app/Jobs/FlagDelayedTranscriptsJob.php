@@ -37,7 +37,7 @@ class FlagDelayedTranscriptsJob implements ShouldQueue
             ->get();
 
         foreach ($stalled as $meeting) {
-            $meeting->status = MeetingStatus::Failed;
+            $meeting->status = MeetingStatus::Delayed;
             $meeting->save();
 
             broadcast(new MeetingStatusUpdated($meeting));

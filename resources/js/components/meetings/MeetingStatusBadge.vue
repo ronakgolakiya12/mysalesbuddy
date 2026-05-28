@@ -30,6 +30,8 @@ const config = computed<BadgeStyle>(() => {
             return { label: 'Failed', classes: 'bg-red-100 text-red-700', animate: false };
         case MeetingStatus.Cancelled:
             return { label: 'Cancelled', classes: 'bg-gray-100 text-gray-500', animate: false };
+        case MeetingStatus.Delayed:
+            return { label: 'Delayed', classes: 'bg-orange-100 text-orange-700', animate: false };
         default:
             return { label: String(props.status), classes: 'bg-gray-100 text-gray-700', animate: false };
     }
