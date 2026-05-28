@@ -31,6 +31,7 @@ class CoachingAnalysis extends Model
         'talk_time_prospect',
         'output_json',
         'triggered_by',
+        'provider_used',
         'completed_at',
         'failed_at',
         'failure_reason',

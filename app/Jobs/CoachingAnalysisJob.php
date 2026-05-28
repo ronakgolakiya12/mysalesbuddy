@@ -9,9 +9,10 @@ use App\Exceptions\CoachingOutputInvalidException;
 use App\Exceptions\TranscriptTooLargeException;
 use App\Models\CoachingAnalysis;
 use App\Models\Meeting;
+use App\Services\Ai\AiServiceInterface;
 use App\Services\AuditService;
 use App\Services\CoachingPromptService;
-use App\Services\OpenAiService;
+use App\Support\Enums\AiProvider;
 use App\Support\Enums\AuditEventType;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -50,7 +51,7 @@ class CoachingAnalysisJob implements ShouldQueue
         return [30, 120];
     }
 
-    public function handle(OpenAiService $openAi, CoachingPromptService $promptService, AuditService $audit): void
+    public function handle(AiServiceInterface $openAi, CoachingPromptService $promptService, AuditService $audit): void
     {
         /** @var CoachingAnalysis|null $analysis */
         $analysis = CoachingAnalysis::query()->find($this->analysisId);
@@ -121,7 +122,7 @@ class CoachingAnalysisJob implements ShouldQueue
             );
         } catch (Throwable $e) {
             if ($this->attempts() >= $this->tries) {
-                $this->failAnalysis($analysis, 'OpenAI call failed: '.$e->getMessage());
+                $this->failAnalysis($analysis, 'AI provider call failed: '.$e->getMessage());
 
                 return;
             }
@@ -146,12 +147,15 @@ class CoachingAnalysisJob implements ShouldQueue
             return;
         }
 
+        $providerValue = AiProvider::fromConfig()->value;
+
         $analysis->fill([
             'prompt_version_id' => $prompt->id,
             'overall_score' => (int) $output['overall_score'],
             'talk_time_rep' => $talkTimeRep,
             'talk_time_prospect' => $talkTimeProspect,
             'output_json' => $output,
+            'provider_used' => $providerValue,
             'completed_at' => Carbon::now(),
         ])->save();
 
@@ -165,6 +169,7 @@ class CoachingAnalysisJob implements ShouldQueue
                 'mode' => $this->mode,
                 'elapsed_seconds' => $elapsed,
                 'overall_score' => $analysis->overall_score,
+                'ai_provider' => $providerValue,
             ]
         );
 

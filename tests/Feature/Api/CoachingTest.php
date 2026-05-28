@@ -77,7 +77,7 @@ class CoachingTest extends TestCase
             ])
             ->assertStatus(202);
 
-        $analysisId = $response->json('data.analysis_id');
+        $analysisId = $response->json('data.id');
         $this->assertNotNull($analysisId);
 
         Queue::assertPushed(CoachingAnalysisJob::class, function (CoachingAnalysisJob $job) use ($meeting, $analysisId): bool {
@@ -147,7 +147,9 @@ class CoachingTest extends TestCase
                 'section_key' => 'strengths',
                 'rating' => 'useful',
             ])
-            ->assertStatus(204);
+            ->assertStatus(200)
+            ->assertJsonPath('data.section_key', 'strengths')
+            ->assertJsonPath('data.rating', 'useful');
 
         $this->assertDatabaseHas('coaching_ratings', [
             'coaching_analysis_id' => $analysis->id,
@@ -161,7 +163,8 @@ class CoachingTest extends TestCase
                 'section_key' => 'strengths',
                 'rating' => 'not_useful',
             ])
-            ->assertStatus(204);
+            ->assertStatus(200)
+            ->assertJsonPath('data.rating', 'not_useful');
 
         $this->assertSame(1, CoachingRating::where('coaching_analysis_id', $analysis->id)->count());
         $this->assertDatabaseHas('coaching_ratings', [

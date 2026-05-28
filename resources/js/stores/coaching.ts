@@ -54,8 +54,10 @@ export const useCoachingStore = defineStore('coaching', () => {
         if (!analysis.value) return;
         const analysisId = analysis.value.id;
         const meetingId = currentMeetingId.value;
-        const existingRatings = analysis.value.ratings ?? [];
-        const previous = existingRatings.find((r) => r.section_key === sectionKey);
+        const existingRatings = (analysis.value.ratings ?? []).filter(Boolean);
+        const previous = existingRatings.find(
+            (r) => r && r.section_key === sectionKey,
+        );
         const optimistic: CoachingRating = previous
             ? { ...previous, rating }
             : {
@@ -65,7 +67,9 @@ export const useCoachingStore = defineStore('coaching', () => {
                   rating,
                   created_at: new Date().toISOString(),
               };
-        const without = existingRatings.filter((r) => r.section_key !== sectionKey);
+        const without = existingRatings.filter(
+            (r) => r && r.section_key !== sectionKey,
+        );
         analysis.value = {
             ...analysis.value,
             ratings: [...without, optimistic],
@@ -77,11 +81,13 @@ export const useCoachingStore = defineStore('coaching', () => {
             });
             if (analysis.value && analysis.value.id === analysisId) {
                 const next = (analysis.value.ratings ?? []).filter(
-                    (r) => r.section_key !== sectionKey,
+                    (r) => r && r.section_key !== sectionKey,
                 );
+                // Keep the optimistic entry if the API somehow returned no body.
+                const merged = saved ? [...next, saved] : [...next, optimistic];
                 analysis.value = {
                     ...analysis.value,
-                    ratings: [...next, saved],
+                    ratings: merged,
                 };
             }
         } catch {

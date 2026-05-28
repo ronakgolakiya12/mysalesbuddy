@@ -420,8 +420,7 @@
 
     {{-- ====================== TRANSCRIPT ====================== --}}
     @if($segments->isNotEmpty())
-        <div class="page-break"></div>
-        <h2>Transcript</h2>
+        <h2 style="page-break-before: avoid;">Transcript</h2>
         @php
             $turns = [];
             $currentTurn = null;

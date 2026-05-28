@@ -160,6 +160,7 @@ export interface CoachingAnalysis {
     talk_time_prospect: number | null;
     output_json: CoachingAnalysisOutput | null;
     triggered_by: 'auto' | 'manual';
+    provider_used: 'openai' | 'gemini' | null;
     status: 'pending' | 'completed' | 'failed';
     completed_at: string | null;
     failed_at: string | null;

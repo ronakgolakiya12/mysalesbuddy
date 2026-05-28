@@ -34,6 +34,7 @@ class CoachingAnalysisResource extends ApiResource
             'talk_time_prospect' => $analysis->talk_time_prospect,
             'output_json' => $analysis->output_json,
             'triggered_by' => $analysis->triggered_by,
+            'provider_used' => $analysis->provider_used,
             'status' => $this->derivedStatus($analysis),
             'completed_at' => $analysis->completed_at?->toIso8601String(),
             'failed_at' => $analysis->failed_at?->toIso8601String(),
