@@ -39,7 +39,7 @@ class CoachingTest extends TestCase
             ->assertStatus(200)
             ->assertJsonPath('data.id', $newest->id)
             ->assertJsonPath('data.overall_score', 8)
-            ->assertJsonPath('data.summary', 'Good discovery call.');
+            ->assertJsonPath('data.output_json.one_liner', 'Strong discovery with a clearly committed next step.');
     }
 
     public function test_show_returns_404_when_no_analysis(): void

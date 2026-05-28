@@ -1,31 +1,71 @@
 {
     "overall_score": 8,
-    "summary": "Strong discovery conversation. Rep asked probing questions and uncovered key pain points. Next steps were clearly defined.",
+    "one_liner": "Strong discovery with a clearly committed next step.",
+    "rationale": "The rep led with open-ended discovery, quantified the prospect's pain in time and dollars, and locked in a concrete follow-up by Friday. Budget was not confirmed.",
+    "next_step_clarity": "clear",
+    "next_step_detail": "Send proposal by Friday and schedule follow-up demo with the technical lead.",
+    "discovery_quality": {
+        "pain_uncovered": true,
+        "impact_quantified": true,
+        "decision_process_explored": true,
+        "timeline_confirmed": false,
+        "missed_areas": ["budget"]
+    },
+    "objection_handling": {
+        "summary": "Acknowledged the existing vendor relationship and pivoted to renewal timing rather than fighting on price.",
+        "objections": [
+            {
+                "objection": "We already have a vendor for this.",
+                "response_summary": "Acknowledged the relationship and probed renewal date.",
+                "resolved": true,
+                "evidence": {
+                    "speaker": "Rep",
+                    "timestamp_ms": 120000,
+                    "quote": "Totally understand — when is that contract up for renewal?"
+                }
+            }
+        ]
+    },
     "strengths": [
-        "Asked open-ended discovery questions early in the call",
-        "Reflected back the prospect's pain points to confirm understanding",
-        "Quantified impact with specific numbers"
-    ],
-    "improvements": [
-        "Reduce filler words ('um', 'like')",
-        "Improve transitions between discovery and solution segments",
-        "Slow down when explaining pricing"
-    ],
-    "questions_asked": [
-        "What is your biggest challenge with the current process?",
-        "How much time does your team spend on this weekly?",
-        "Who else would be involved in this decision?"
-    ],
-    "objections": [
         {
-            "objection": "We already have a vendor for this.",
-            "response": "Acknowledged the existing relationship and asked about renewal timing.",
-            "resolved": true
+            "title": "Open-ended discovery",
+            "detail": "Surfaced pain through genuine curiosity rather than leading with the pitch.",
+            "evidence": {
+                "speaker": "Rep",
+                "timestamp_ms": 15000,
+                "quote": "Walk me through what your team's typical week looks like."
+            }
+        },
+        {
+            "title": "Quantified impact",
+            "detail": "Translated process inefficiency into concrete hours and dollars per quarter.",
+            "evidence": {
+                "speaker": "Rep",
+                "timestamp_ms": 240000,
+                "quote": "So that's roughly 12 hours a week — about $4k a quarter."
+            }
         }
     ],
-    "next_steps": [
-        "Send proposal by Friday",
-        "Schedule follow-up demo with technical lead",
-        "Share customer case study"
+    "opportunities": [
+        {
+            "title": "Skipped budget check",
+            "detail": "Never confirmed whether budget exists for this initiative this quarter.",
+            "suggestion": "Add a budget-availability question before sending the proposal.",
+            "evidence": {
+                "speaker": "Rep",
+                "timestamp_ms": 360000,
+                "quote": "Let's talk pricing on the next call."
+            }
+        },
+        {
+            "title": "Filler words during pricing",
+            "detail": "Frequent 'um' and 'like' during the pricing discussion undercut authority.",
+            "suggestion": "Pause silently instead of filling — projects confidence.",
+            "evidence": {
+                "speaker": "Rep",
+                "timestamp_ms": 420000,
+                "quote": "Um, so, like, the pricing — um — kind of depends."
+            }
+        }
     ]
 }

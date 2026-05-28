@@ -41,14 +41,67 @@ class CoachingAnalysisFactory extends Factory
     {
         return $this->state(fn () => [
             'overall_score' => 8,
+            'talk_time_rep' => 45,
+            'talk_time_prospect' => 55,
             'output_json' => [
                 'overall_score' => 8,
-                'summary' => 'Good discovery call.',
-                'strengths' => ['Asked open-ended questions'],
-                'improvements' => ['Reduce filler words'],
-                'questions_asked' => ['What is your biggest challenge?'],
-                'objections' => [],
-                'next_steps' => ['Send proposal next week'],
+                'one_liner' => 'Strong discovery with a clearly committed next step.',
+                'rationale' => 'The rep led with open-ended questions and locked a follow-up.',
+                'next_step_clarity' => 'clear',
+                'next_step_detail' => 'Send proposal by Friday.',
+                'discovery_quality' => [
+                    'pain_uncovered' => true,
+                    'impact_quantified' => true,
+                    'decision_process_explored' => true,
+                    'timeline_confirmed' => false,
+                    'missed_areas' => ['budget'],
+                ],
+                'objection_handling' => [
+                    'summary' => 'Acknowledged the existing vendor and pivoted to renewal timing.',
+                    'objections' => [],
+                ],
+                'strengths' => [
+                    [
+                        'title' => 'Open-ended discovery',
+                        'detail' => 'Surfaced pain without leading.',
+                        'evidence' => [
+                            'speaker' => 'Rep',
+                            'timestamp_ms' => 15000,
+                            'quote' => 'Walk me through your typical week.',
+                        ],
+                    ],
+                    [
+                        'title' => 'Quantified impact',
+                        'detail' => 'Translated inefficiency into dollars.',
+                        'evidence' => [
+                            'speaker' => 'Rep',
+                            'timestamp_ms' => 240000,
+                            'quote' => 'About 12 hours a week.',
+                        ],
+                    ],
+                ],
+                'opportunities' => [
+                    [
+                        'title' => 'Skipped budget check',
+                        'detail' => 'Never confirmed budget exists this quarter.',
+                        'suggestion' => 'Ask about budget before proposing.',
+                        'evidence' => [
+                            'speaker' => 'Rep',
+                            'timestamp_ms' => 360000,
+                            'quote' => "Let's talk pricing on the next call.",
+                        ],
+                    ],
+                    [
+                        'title' => 'Filler words',
+                        'detail' => 'Frequent ums during pricing.',
+                        'suggestion' => 'Pause silently instead of filling.',
+                        'evidence' => [
+                            'speaker' => 'Rep',
+                            'timestamp_ms' => 420000,
+                            'quote' => 'Um, so, like, pricing depends.',
+                        ],
+                    ],
+                ],
             ],
             'completed_at' => now(),
             'failed_at' => null,

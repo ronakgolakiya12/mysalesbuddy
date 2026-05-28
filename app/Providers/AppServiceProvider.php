@@ -40,7 +40,16 @@ class AppServiceProvider extends ServiceProvider
         });
 
         $this->app->singleton(OpenAiClient::class, function (): OpenAiClient {
-            return OpenAIFactory::client((string) config('services.openai.api_key'));
+            $timeout = (int) config('services.openai.timeout', 55);
+            $httpClient = new Client([
+                'timeout' => $timeout,
+                'connect_timeout' => 10,
+            ]);
+
+            return OpenAIFactory::factory()
+                ->withApiKey((string) config('services.openai.api_key'))
+                ->withHttpClient($httpClient)
+                ->make();
         });
     }
 

@@ -27,17 +27,17 @@ const circumference = computed(() => 2 * Math.PI * radius.value);
 
 const safeScore = computed(() => {
     if (props.score === null || Number.isNaN(props.score)) return 0;
-    return Math.max(0, Math.min(100, props.score));
+    return Math.max(0, Math.min(10, props.score));
 });
 
 const dashOffset = computed(
-    () => circumference.value - (safeScore.value / 100) * circumference.value,
+    () => circumference.value - (safeScore.value / 10) * circumference.value,
 );
 
 const colorClass = computed(() => {
     if (props.score === null) return 'text-gray-400';
-    if (props.score >= 80) return 'text-emerald-500';
-    if (props.score >= 60) return 'text-amber-500';
+    if (props.score >= 7) return 'text-emerald-500';
+    if (props.score >= 5) return 'text-amber-500';
     return 'text-red-500';
 });
 

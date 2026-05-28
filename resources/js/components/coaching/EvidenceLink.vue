@@ -28,10 +28,13 @@ function onJump(): void {
         class="mt-2 rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-xs"
     >
         <div class="flex items-center justify-between gap-2">
-            <span class="font-mono tabular-nums text-gray-500">{{ timestamp }}</span>
+            <span class="flex items-center gap-2 min-w-0">
+                <span class="truncate font-medium text-gray-700">{{ evidence.speaker }}</span>
+                <span class="font-mono tabular-nums text-gray-400">{{ timestamp }}</span>
+            </span>
             <button
                 type="button"
-                class="text-indigo-600 hover:text-indigo-700 hover:underline"
+                class="shrink-0 text-indigo-600 hover:text-indigo-700 hover:underline"
                 @click="onJump"
             >
                 Jump to transcript

@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { AxiosError } from 'axios';
+import { VueDatePicker } from '@vuepic/vue-datepicker';
+import '@vuepic/vue-datepicker/dist/main.css';
 import FormInput from '@/components/ui/FormInput.vue';
 import PrimaryButton from '@/components/ui/PrimaryButton.vue';
 import { useMeetingsStore } from '@/stores/meetings';
@@ -21,7 +23,7 @@ const store = useMeetingsStore();
 const url = ref('');
 const title = ref('');
 const isScheduled = ref(false);
-const scheduledAt = ref('');
+const scheduledAt = ref<Date | null>(null);
 const scope = ref<MeetingScope>('private');
 const submitting = ref(false);
 const errors = ref<ValidationErrors>({});
@@ -41,7 +43,7 @@ function reset(): void {
     url.value = '';
     title.value = '';
     isScheduled.value = false;
-    scheduledAt.value = '';
+    scheduledAt.value = null;
     scope.value = 'private';
     errors.value = {};
     conflictBanner.value = null;
@@ -70,7 +72,7 @@ async function submit(): Promise<void> {
             scope: scope.value,
         };
         if (isScheduled.value && scheduledAt.value) {
-            payload.scheduled_at = new Date(scheduledAt.value).toISOString();
+            payload.scheduled_at = scheduledAt.value.toISOString();
         }
         const meeting = await store.create(payload);
         reset();
@@ -151,12 +153,16 @@ async function submit(): Promise<void> {
                 </div>
                 <div v-if="isScheduled" class="space-y-1">
                     <label for="scheduled-at" class="block text-sm font-medium text-gray-700">Scheduled at</label>
-                    <input
-                        id="scheduled-at"
+                    <VueDatePicker
                         v-model="scheduledAt"
-                        type="datetime-local"
-                        class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
-                    >
+                        :min-date="new Date()"
+                        :is-24="false"
+                        format="dd MMM yyyy, hh:mm a"
+                        placeholder="Pick a date and time"
+                        teleport
+                        auto-apply
+                        input-class-name="new-meeting-scheduled-picker"
+                    />
                     <p v-if="errors.scheduled_at?.[0]" class="text-sm text-red-600">{{ errors.scheduled_at[0] }}</p>
                 </div>
                 <fieldset>

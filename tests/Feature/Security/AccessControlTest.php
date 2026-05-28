@@ -87,7 +87,7 @@ class AccessControlTest extends TestCase
 
         $this->actingAs($intruder)
             ->patchJson("/api/coaching-analyses/{$analysis->id}/rate", [
-                'section_key' => 'summary',
+                'section_key' => 'strengths.0',
                 'rating' => 'useful',
             ])
             ->assertStatus(403);

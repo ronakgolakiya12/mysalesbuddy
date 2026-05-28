@@ -88,6 +88,7 @@ export interface PaginationMeta {
 }
 
 export interface CoachingEvidence {
+    speaker: string;
     timestamp_ms: number;
     quote: string;
 }

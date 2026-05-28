@@ -19,7 +19,7 @@ class UpdatePromptRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'prompt_text' => ['required', 'string', 'min:10', 'max:20000'],
+            'prompt_text' => ['required', 'string', 'min:100', 'max:10000'],
         ];
     }
 }

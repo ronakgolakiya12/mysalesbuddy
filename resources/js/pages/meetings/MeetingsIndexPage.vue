@@ -35,17 +35,25 @@ const showSuccessBanner = ref(false);
 let bannerTimer: ReturnType<typeof setTimeout> | null = null;
 
 const fromDate = computed(() =>
-    dateRange.value ? toISODate(dateRange.value[0]) : '',
+    dateRange.value ? toLocalIso(dateRange.value[0]) : '',
 );
 const toDate = computed(() =>
-    dateRange.value ? toISODate(dateRange.value[1]) : '',
+    dateRange.value ? toLocalIso(dateRange.value[1]) : '',
 );
 
-function toISODate(d: Date): string {
+function toLocalIso(d: Date): string {
+    const pad = (n: number): string => String(n).padStart(2, '0');
     const yyyy = d.getFullYear();
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const dd = String(d.getDate()).padStart(2, '0');
-    return `${yyyy}-${mm}-${dd}`;
+    const mm = pad(d.getMonth() + 1);
+    const dd = pad(d.getDate());
+    const hh = pad(d.getHours());
+    const mi = pad(d.getMinutes());
+    const ss = pad(d.getSeconds());
+    const offsetMin = -d.getTimezoneOffset();
+    const sign = offsetMin >= 0 ? '+' : '-';
+    const offHh = pad(Math.floor(Math.abs(offsetMin) / 60));
+    const offMm = pad(Math.abs(offsetMin) % 60);
+    return `${yyyy}-${mm}-${dd}T${hh}:${mi}:${ss}${sign}${offHh}:${offMm}`;
 }
 
 useMeetingChannel();
@@ -318,9 +326,9 @@ onBeforeUnmount(() => {
             <VueDatePicker
                 v-model="dateRange"
                 range
-                :enable-time-picker="false"
-                format="dd MMM yyyy"
-                placeholder="Date range"
+                :is-24="false"
+                format="dd MMM yyyy, hh:mm a"
+                placeholder="Date & time range"
                 auto-apply
                 :clearable="true"
                 :max-date="new Date()"

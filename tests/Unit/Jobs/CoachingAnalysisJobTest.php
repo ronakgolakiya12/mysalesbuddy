@@ -79,14 +79,37 @@ class CoachingAnalysisJobTest extends TestCase
     /** @return array<string, mixed> */
     private function validOutput(): array
     {
+        $evidence = [
+            'speaker' => 'Rep',
+            'timestamp_ms' => 15000,
+            'quote' => 'Walk me through your typical week.',
+        ];
+
         return [
             'overall_score' => 8,
-            'summary' => 'Good discovery call.',
-            'strengths' => ['Open-ended questions'],
-            'improvements' => ['Reduce filler'],
-            'questions_asked' => ['Q1?'],
-            'objections' => [],
-            'next_steps' => ['Follow up'],
+            'one_liner' => 'Strong discovery with a clear next step.',
+            'rationale' => 'Rep led with open questions and locked a follow-up.',
+            'next_step_clarity' => 'clear',
+            'next_step_detail' => 'Send proposal by Friday.',
+            'discovery_quality' => [
+                'pain_uncovered' => true,
+                'impact_quantified' => true,
+                'decision_process_explored' => true,
+                'timeline_confirmed' => false,
+                'missed_areas' => ['budget'],
+            ],
+            'objection_handling' => [
+                'summary' => 'No major objections.',
+                'objections' => [],
+            ],
+            'strengths' => [
+                ['title' => 'Open-ended discovery', 'detail' => 'Asked good questions.', 'evidence' => $evidence],
+                ['title' => 'Quantified impact', 'detail' => 'Translated pain to dollars.', 'evidence' => $evidence],
+            ],
+            'opportunities' => [
+                ['title' => 'Budget check skipped', 'detail' => 'Did not confirm budget.', 'suggestion' => 'Ask earlier.', 'evidence' => $evidence],
+                ['title' => 'Filler words', 'detail' => 'Frequent ums.', 'suggestion' => 'Pause instead.', 'evidence' => $evidence],
+            ],
         ];
     }
 
@@ -114,7 +137,7 @@ class CoachingAnalysisJobTest extends TestCase
         $analysis->refresh();
         $this->assertNotNull($analysis->completed_at);
         $this->assertSame(8, $analysis->overall_score);
-        $this->assertSame('Good discovery call.', $analysis->output_json['summary']);
+        $this->assertSame('Strong discovery with a clear next step.', $analysis->output_json['one_liner']);
 
         $this->assertDatabaseHas('audit_log', [
             'event_type' => 'coaching.completed',
@@ -236,18 +259,9 @@ class CoachingAnalysisJobTest extends TestCase
             $mock->shouldReceive('estimateTokens')->andReturn(50);
             $mock->shouldReceive('analyzeTranscript')
                 ->andReturnUsing(function (): array {
-                    // Simulate 61 seconds of elapsed time during OpenAI call.
                     Carbon::setTestNow(Carbon::now()->addSeconds(61));
 
-                    return [
-                        'overall_score' => 7,
-                        'summary' => 'Slow.',
-                        'strengths' => [],
-                        'improvements' => [],
-                        'questions_asked' => [],
-                        'objections' => [],
-                        'next_steps' => [],
-                    ];
+                    return $this->validOutput();
                 });
         });
 

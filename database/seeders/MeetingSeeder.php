@@ -131,22 +131,56 @@ class MeetingSeeder extends Seeder
             'triggered_by' => 'auto',
             'completed_at' => now(),
             'output_json' => [
-                'summary' => 'Strong discovery call with clear quantification of pain. Next step on calendar.',
-                'strengths' => [
-                    ['title' => 'Quantified pain', 'evidence' => 'Probably ten to twelve hours from our ops lead.'],
-                    ['title' => 'Tied pain to impact', 'evidence' => 'Our ops lead could finally work on enablement.'],
+                'overall_score' => $score,
+                'one_liner' => 'Strong discovery with clear quantification of pain and a concrete next step.',
+                'rationale' => 'Rep led with discovery, quantified the pain in hours, and locked a follow-up. Decision-maker and budget owner not yet confirmed.',
+                'next_step_clarity' => 'clear',
+                'next_step_detail' => 'Send recap email and schedule technical deep dive next week.',
+                'discovery_quality' => [
+                    'pain_uncovered' => true,
+                    'impact_quantified' => true,
+                    'decision_process_explored' => false,
+                    'timeline_confirmed' => true,
+                    'missed_areas' => ['budget owner'],
                 ],
-                'improvements' => [
+                'objection_handling' => [
+                    'summary' => 'No major objections raised — call was largely cooperative.',
+                    'objections' => [],
+                ],
+                'strengths' => [
                     [
-                        'title' => 'Confirm budget owner',
-                        'evidence' => 'No explicit mention of who signs off.',
-                        'suggestion' => 'Ask "Who else needs to weigh in on a decision like this?" before EOC.',
+                        'title' => 'Quantified pain',
+                        'detail' => 'Translated process drag into hours per week from the ops lead.',
+                        'evidence' => [
+                            'speaker' => 'Rep',
+                            'timestamp_ms' => 180000,
+                            'quote' => 'Probably ten to twelve hours from our ops lead.',
+                        ],
+                    ],
+                    [
+                        'title' => 'Tied pain to impact',
+                        'detail' => 'Linked the lost hours to enablement work the team wanted to ship.',
+                        'evidence' => [
+                            'speaker' => 'Rep',
+                            'timestamp_ms' => 240000,
+                            'quote' => 'Our ops lead could finally work on enablement.',
+                        ],
                     ],
                 ],
-                'next_steps' => ['Send recap email', 'Schedule technical deep dive'],
-                'discovery_quality' => $score,
-                'objection_handling' => max(0, $score - 10),
-                'overall_score' => $score,
+                'opportunities' => [
+                    [
+                        'title' => 'Confirm budget owner',
+                        'detail' => 'No explicit mention of who signs off on this category of spend.',
+                        'suggestion' => 'Ask "Who else needs to weigh in on a decision like this?" before end of call.',
+                        'evidence' => null,
+                    ],
+                    [
+                        'title' => 'Push for a paper trail',
+                        'detail' => 'Verbal commitment was strong but no written follow-up was scheduled in the meeting.',
+                        'suggestion' => 'Confirm a specific calendar invite during the call, not after.',
+                        'evidence' => null,
+                    ],
+                ],
             ],
         ]);
     }

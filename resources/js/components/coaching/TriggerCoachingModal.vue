@@ -23,7 +23,7 @@ const errors = ref<ValidationErrors>({});
 const submitError = ref<string | null>(null);
 
 const charCount = computed(() => dealContext.value.length);
-const MAX_CHARS = 4000;
+const MAX_CHARS = 5000;
 
 watch(
     () => props.open,
