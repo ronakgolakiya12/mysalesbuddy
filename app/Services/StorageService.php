@@ -77,6 +77,34 @@ class StorageService
         return $this->signedUrlFor($this->avatarDisk(), $path, $minutes, 'avatars.download');
     }
 
+    /**
+     * Read raw avatar bytes from the configured disk. Returns null when the
+     * file is missing or unreadable. Used by DispatchBotAction to forward
+     * the notetaker avatar to Recall.ai as inline JPEG output media.
+     */
+    public function readAvatar(string $path): ?string
+    {
+        if ($path === '') {
+            return null;
+        }
+
+        try {
+            $filesystem = Storage::disk($this->avatarDisk());
+            if (! $filesystem->exists($path)) {
+                return null;
+            }
+
+            return $filesystem->get($path);
+        } catch (Throwable $e) {
+            Log::warning('Failed to read avatar from storage.', [
+                'path' => $path,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
     public function storePdf(Meeting $meeting, string $contents): string
     {
         $path = "exports/{$meeting->user_id}/{$meeting->id}/".(string) Str::uuid().'.pdf';
