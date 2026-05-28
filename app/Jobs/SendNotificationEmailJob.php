@@ -23,6 +23,12 @@ class SendNotificationEmailJob implements ShouldQueue
 
     public int $tries = 3;
 
+    /** @return array<int, int> */
+    public function backoff(): array
+    {
+        return [30, 120, 300];
+    }
+
     /**
      * @param  array<string, mixed>  $payload
      */
