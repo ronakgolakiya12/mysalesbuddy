@@ -39,7 +39,7 @@ class CoachingAnalysisResource extends ApiResource
             'completed_at' => $analysis->completed_at?->toIso8601String(),
             'failed_at' => $analysis->failed_at?->toIso8601String(),
             'failure_reason' => $analysis->failure_reason,
-            'created_at' => $analysis->created_at->toIso8601String(),
+            'created_at' => $analysis->created_at?->toIso8601String(),
             'ratings' => CoachingRatingResource::collection($this->whenLoaded('ratings')),
         ];
     }

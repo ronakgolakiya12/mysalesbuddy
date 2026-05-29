@@ -66,20 +66,17 @@ class GeminiAiService implements AiServiceInterface
 
         $model = (string) config('services.gemini.model', 'gemini-1.5-pro');
 
-        $response = $this->client
-            ->generativeModel($model)
-            ->withGenerationConfig(new GenerationConfig(
-                responseMimeType: ResponseMimeType::APPLICATION_JSON,
-                temperature: 0.3,
-                // The coaching JSON schema with 2-4 strengths + 2-4 opportunities
-                // (each with title/detail/suggestion + evidence{speaker,timestamp_ms,quote})
-                // can easily run past 2000 tokens and truncate mid-string. 8192 is the
-                // documented max for Gemini 1.5 Pro and leaves comfortable headroom.
-                maxOutputTokens: 8192,
-            ))
-            ->generateContent($fullPrompt);
+        $config = new GenerationConfig(
+            responseMimeType: ResponseMimeType::APPLICATION_JSON,
+            temperature: 0.3,
+            // The coaching JSON schema with 2-4 strengths + 2-4 opportunities
+            // (each with title/detail/suggestion + evidence{speaker,timestamp_ms,quote})
+            // can easily run past 2000 tokens and truncate mid-string. 8192 is the
+            // documented max for Gemini 1.5 Pro and leaves comfortable headroom.
+            maxOutputTokens: 8192,
+        );
 
-        $rawContent = (string) $response->text();
+        $rawContent = $this->callGemini($model, $config, $fullPrompt);
 
         // Length-only telemetry: response_length near the 8192 token ceiling
         // (~7000 chars empirically) flags likely truncation for follow-up.
@@ -117,6 +114,21 @@ class GeminiAiService implements AiServiceInterface
         }
 
         return $decoded;
+    }
+
+    /**
+     * Wraps the chained Gemini SDK call so tests can stub the response without
+     * mocking the final `\Gemini\Client` class (which Mockery cannot do).
+     * Override in a test subclass to return canned text and capture inputs.
+     */
+    protected function callGemini(string $model, GenerationConfig $config, string $prompt): string
+    {
+        $response = $this->client
+            ->generativeModel($model)
+            ->withGenerationConfig($config)
+            ->generateContent($prompt);
+
+        return (string) $response->text();
     }
 
     public function estimateTokens(string $text): int

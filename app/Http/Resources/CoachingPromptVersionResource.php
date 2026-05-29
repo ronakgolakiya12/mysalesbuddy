@@ -24,7 +24,7 @@ class CoachingPromptVersionResource extends ApiResource
             'id' => $version->id,
             'prompt_text' => $version->prompt_text,
             'is_active' => $version->is_active,
-            'created_at' => $version->created_at->toIso8601String(),
+            'created_at' => $version->created_at?->toIso8601String(),
         ];
     }
 }

@@ -15,7 +15,7 @@ use Illuminate\Support\Carbon;
  * @property string $coaching_analysis_id
  * @property string $section_key
  * @property CoachingRatingEnum $rating
- * @property Carbon $created_at
+ * @property Carbon|null $created_at
  */
 class CoachingRating extends Model
 {

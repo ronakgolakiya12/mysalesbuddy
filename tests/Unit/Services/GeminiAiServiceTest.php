@@ -6,10 +6,8 @@ namespace Tests\Unit\Services;
 
 use App\Exceptions\TranscriptTooLargeException;
 use App\Services\GeminiAiService;
-use Gemini\Client as GeminiClient;
+use Gemini;
 use Gemini\Data\GenerationConfig;
-use Mockery;
-use Mockery\MockInterface;
 use RuntimeException;
 use Tests\TestCase;
 
@@ -21,40 +19,45 @@ class GeminiAiServiceTest extends TestCase
 
     protected function tearDown(): void
     {
-        Mockery::close();
         $this->capturedPrompt = '';
         $this->capturedConfig = null;
         parent::tearDown();
     }
 
     /**
-     * Build a GeminiAiService whose underlying client returns the given text
-     * from generateContent, and capture both the prompt and the GenerationConfig.
+     * Build a GeminiAiService that returns the given text from its internal
+     * Gemini call, capturing prompt + config for assertions. We can't mock
+     * `\Gemini\Client` (it's `final`), so we instantiate a real client (no
+     * network call until `generateContent()`) and override the protected
+     * `callGemini()` shim in an anonymous subclass.
      */
     private function makeServiceReturning(string $responseText): GeminiAiService
     {
-        $response = Mockery::mock();
-        $response->shouldReceive('text')->andReturn($responseText);
+        // Real client — constructor does no I/O.
+        $client = Gemini::client('test-key');
 
-        $model = Mockery::mock();
-        $model->shouldReceive('withGenerationConfig')
-            ->andReturnUsing(function (GenerationConfig $config) use ($model) {
-                $this->capturedConfig = $config;
+        return new class ($client, $responseText, $this) extends GeminiAiService {
+            public function __construct(
+                \Gemini\Client $client,
+                private readonly string $responseText,
+                private readonly GeminiAiServiceTest $testCase,
+            ) {
+                parent::__construct($client);
+            }
 
-                return $model;
-            });
-        $model->shouldReceive('generateContent')
-            ->andReturnUsing(function (string $prompt) use ($response) {
-                $this->capturedPrompt = $prompt;
+            protected function callGemini(string $model, GenerationConfig $config, string $prompt): string
+            {
+                $this->testCase->setCaptured($prompt, $config);
 
-                return $response;
-            });
+                return $this->responseText;
+            }
+        };
+    }
 
-        /** @var GeminiClient&MockInterface $client */
-        $client = Mockery::mock(GeminiClient::class);
-        $client->shouldReceive('generativeModel')->andReturn($model);
-
-        return new GeminiAiService($client);
+    public function setCaptured(string $prompt, GenerationConfig $config): void
+    {
+        $this->capturedPrompt = $prompt;
+        $this->capturedConfig = $config;
     }
 
     /** @return array<int, array{speaker_label: string, body: string, start_ms: int}> */
@@ -107,8 +110,6 @@ class GeminiAiServiceTest extends TestCase
 
     public function test_analyze_transcript_throws_on_invalid_json(): void
     {
-        // Well-formed object delimiters but broken inside — survives extractJson(),
-        // fails inside json_decode() even after sanitization.
         $service = $this->makeServiceReturning('{"score": broken}');
 
         $this->expectException(RuntimeException::class);
@@ -137,13 +138,11 @@ class GeminiAiServiceTest extends TestCase
     }
 
     // ─────────────────────────────────────────────────────
-    // New tests for the sanitizer + extractor + prompt rules
+    // Sanitizer + extractor + prompt-rules coverage
     // ─────────────────────────────────────────────────────
 
     public function test_sanitize_removes_literal_newlines_in_strings(): void
     {
-        // Real newline character inside a string value — would normally trip
-        // json_decode with "Control character error".
         $raw = "{\"summary\": \"first line\nsecond line\", \"score\": 8}";
         $service = $this->makeServiceReturning($raw);
 
@@ -194,7 +193,6 @@ class GeminiAiServiceTest extends TestCase
 
     public function test_handles_truncated_response_gracefully(): void
     {
-        // No closing `}` — extractJson cannot recover, must throw cleanly.
         $service = $this->makeServiceReturning('{"overall_score": 4, "one_liner": "The rep');
 
         $this->expectException(RuntimeException::class);

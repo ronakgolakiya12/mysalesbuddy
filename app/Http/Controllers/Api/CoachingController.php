@@ -125,6 +125,7 @@ class CoachingController extends Controller
             ]
         );
 
-        return $this->successResource(new CoachingRatingResource($rating));
+        return $this->successResource(new CoachingRatingResource($rating))
+            ->setStatusCode(200);
     }
 }

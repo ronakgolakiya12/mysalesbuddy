@@ -14,11 +14,11 @@ class GoogleOAuthService
 
     public function __construct(?GoogleClient $client = null)
     {
-        try {
-            $this->client = $this->buildDefaultClient();
-        } catch (\Exception $e) {
-            $this->client = $client;
-        }
+        // Honour the injected client (used by tests / DI overrides). Only build
+        // a default when no client is provided — otherwise the constructor
+        // also leaks Google\Client's error handlers, which PHPUnit flags as
+        // risky.
+        $this->client = $client ?? $this->buildDefaultClient();
     }
 
     private function buildDefaultClient(): GoogleClient

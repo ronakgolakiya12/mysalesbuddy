@@ -27,7 +27,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $completed_at
  * @property Carbon|null $failed_at
  * @property string|null $failure_reason
- * @property Carbon $created_at
+ * @property Carbon|null $created_at
  */
 class CoachingAnalysis extends Model
 {

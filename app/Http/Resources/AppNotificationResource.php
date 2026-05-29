@@ -25,7 +25,7 @@ class AppNotificationResource extends ApiResource
             'type' => $notification->type,
             'payload' => $notification->payload_json,
             'read_at' => $notification->read_at?->toIso8601String(),
-            'created_at' => $notification->created_at->toIso8601String(),
+            'created_at' => $notification->created_at?->toIso8601String(),
         ];
     }
 }

@@ -16,7 +16,7 @@ class PurgeSoftDeletedMeetingsJobTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_force_deletes_meetings_soft_deleted_more_than_30_days_ago(): void
+    public function test_force_deletes_meetings_soft_deleted_more_than_90_days_ago(): void
     {
         $user = User::factory()->create();
         $meeting = Meeting::factory()->for($user)->ready()->create();
@@ -32,7 +32,7 @@ class PurgeSoftDeletedMeetingsJobTest extends TestCase
 
         $meeting->delete();
         Meeting::withTrashed()->where('id', $meeting->id)->update([
-            'deleted_at' => now()->subDays(31),
+            'deleted_at' => now()->subDays(91),
         ]);
 
         (new PurgeSoftDeletedMeetingsJob())->handle();
@@ -48,7 +48,7 @@ class PurgeSoftDeletedMeetingsJobTest extends TestCase
         $meeting = Meeting::factory()->for($user)->ready()->create();
         $meeting->delete();
         Meeting::withTrashed()->where('id', $meeting->id)->update([
-            'deleted_at' => now()->subDays(5),
+            'deleted_at' => now()->subDays(30),
         ]);
 
         (new PurgeSoftDeletedMeetingsJob())->handle();

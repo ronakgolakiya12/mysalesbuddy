@@ -17,6 +17,18 @@ class StorageServiceTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // Pin the StorageService to write to 's3' so Storage::fake('s3')
+        // intercepts the writes the tests assert against.
+        config([
+            'security.avatar_disk' => 's3',
+            'security.pdf_disk' => 's3',
+        ]);
+    }
+
     public function test_store_avatar_uploads_file_to_disk_and_returns_path(): void
     {
         Storage::fake('s3');

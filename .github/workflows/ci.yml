@@ -121,6 +121,11 @@ jobs:
   frontend:
     name: Frontend
     runs-on: ubuntu-latest
+    env:
+      # laravel-vite-plugin refuses to boot when CI=true (set automatically
+      # by GitHub Actions) unless this bypass is set. Applied job-wide so any
+      # step that transitively loads vite.config picks it up.
+      LARAVEL_BYPASS_ENV_CHECK: '1'
     steps:
       - uses: actions/checkout@v4
 

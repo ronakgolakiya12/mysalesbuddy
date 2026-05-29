@@ -16,7 +16,7 @@ use Illuminate\Support\Carbon;
  * @property string $type
  * @property array<string, mixed>|null $payload_json
  * @property Carbon|null $read_at
- * @property Carbon $created_at
+ * @property Carbon|null $created_at
  */
 class AppNotification extends Model
 {

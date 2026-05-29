@@ -16,7 +16,7 @@ use Illuminate\Support\Carbon;
  * @property string $user_id
  * @property string $prompt_text
  * @property bool $is_active
- * @property Carbon $created_at
+ * @property Carbon|null $created_at
  */
 class CoachingPromptVersion extends Model
 {

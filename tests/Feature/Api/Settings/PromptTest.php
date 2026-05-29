@@ -51,7 +51,7 @@ class PromptTest extends TestCase
 
         $response = $this->actingAs($user)
             ->postJson('/api/settings/prompt', [
-                'prompt_text' => 'A brand new prompt body with more than ten chars.',
+                'prompt_text' => str_repeat('A brand new coaching prompt body with plenty of guidance text. ', 5),
             ])
             ->assertStatus(201);
 
