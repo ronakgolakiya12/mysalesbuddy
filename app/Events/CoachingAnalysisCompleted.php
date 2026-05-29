@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Events;
 
+use App\Http\Resources\CoachingAnalysisResource;
 use App\Models\CoachingAnalysis;
 use App\Models\Meeting;
-use App\Support\Enums\CoachingMode;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
@@ -39,17 +39,20 @@ class CoachingAnalysisCompleted implements ShouldBroadcast
     }
 
     /**
+     * Broadcast the full analysis resource so the frontend can render the
+     * completed coaching panel without needing a follow-up HTTP fetch. The
+     * `meeting_id` stays at the top level so the channel listener can route
+     * the event to the right page without parsing the nested analysis.
+     *
      * @return array<string, mixed>
      */
     public function broadcastWith(): array
     {
-        $mode = $this->analysis->mode;
+        $this->analysis->loadMissing('ratings');
 
         return [
             'meeting_id' => $this->meeting->id,
-            'analysis_id' => $this->analysis->id,
-            'overall_score' => $this->analysis->overall_score,
-            'mode' => $mode instanceof CoachingMode ? $mode->value : (string) $mode,
+            'analysis' => (new CoachingAnalysisResource($this->analysis))->resolve(),
         ];
     }
 }

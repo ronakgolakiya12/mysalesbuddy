@@ -9,9 +9,10 @@ use App\Exceptions\CoachingOutputInvalidException;
 use App\Exceptions\TranscriptTooLargeException;
 use App\Models\CoachingAnalysis;
 use App\Models\Meeting;
+use App\Services\Ai\AiServiceInterface;
 use App\Services\AuditService;
 use App\Services\CoachingPromptService;
-use App\Services\OpenAiService;
+use App\Support\Enums\AiProvider;
 use App\Support\Enums\AuditEventType;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -50,7 +51,7 @@ class CoachingAnalysisJob implements ShouldQueue
         return [30, 120];
     }
 
-    public function handle(OpenAiService $openAi, CoachingPromptService $promptService, AuditService $audit): void
+    public function handle(AiServiceInterface $openAi, CoachingPromptService $promptService, AuditService $audit): void
     {
         /** @var CoachingAnalysis|null $analysis */
         $analysis = CoachingAnalysis::query()->find($this->analysisId);
@@ -121,7 +122,7 @@ class CoachingAnalysisJob implements ShouldQueue
             );
         } catch (Throwable $e) {
             if ($this->attempts() >= $this->tries) {
-                $this->failAnalysis($analysis, 'OpenAI call failed: '.$e->getMessage());
+                $this->failAnalysis($analysis, 'AI provider call failed: '.$e->getMessage());
 
                 return;
             }
@@ -146,12 +147,15 @@ class CoachingAnalysisJob implements ShouldQueue
             return;
         }
 
+        $providerValue = AiProvider::fromConfig()->value;
+
         $analysis->fill([
             'prompt_version_id' => $prompt->id,
             'overall_score' => (int) $output['overall_score'],
             'talk_time_rep' => $talkTimeRep,
             'talk_time_prospect' => $talkTimeProspect,
             'output_json' => $output,
+            'provider_used' => $providerValue,
             'completed_at' => Carbon::now(),
         ])->save();
 
@@ -165,6 +169,7 @@ class CoachingAnalysisJob implements ShouldQueue
                 'mode' => $this->mode,
                 'elapsed_seconds' => $elapsed,
                 'overall_score' => $analysis->overall_score,
+                'ai_provider' => $providerValue,
             ]
         );
 
@@ -237,7 +242,7 @@ class CoachingAnalysisJob implements ShouldQueue
             'objections' => 'is_array',
         ], 'objection_handling');
 
-        $oh['objections'] = array_values(array_map(
+        $oh['objections'] = array_map(
             function ($obj, int $i): array {
                 if (! is_array($obj)) {
                     throw new CoachingOutputInvalidException("objection_handling.objections[{$i}] must be an object.");
@@ -255,9 +260,9 @@ class CoachingAnalysisJob implements ShouldQueue
 
                 return $obj;
             },
-            $oh['objections'],
-            array_keys($oh['objections']),
-        ));
+            array_values($oh['objections']),
+            array_keys(array_values($oh['objections'])),
+        );
 
         return $oh;
     }
@@ -273,7 +278,9 @@ class CoachingAnalysisJob implements ShouldQueue
             throw new CoachingOutputInvalidException("strengths must contain 2-4 items, got {$count}.");
         }
 
-        return array_values(array_map(
+        $items = array_values($items);
+
+        return array_map(
             function ($item, int $i): array {
                 if (! is_array($item)) {
                     throw new CoachingOutputInvalidException("strengths[{$i}] must be an object.");
@@ -292,7 +299,7 @@ class CoachingAnalysisJob implements ShouldQueue
             },
             $items,
             array_keys($items),
-        ));
+        );
     }
 
     /**
@@ -306,7 +313,9 @@ class CoachingAnalysisJob implements ShouldQueue
             throw new CoachingOutputInvalidException("opportunities must contain 2-4 items, got {$count}.");
         }
 
-        return array_values(array_map(
+        $items = array_values($items);
+
+        return array_map(
             function ($item, int $i): array {
                 if (! is_array($item)) {
                     throw new CoachingOutputInvalidException("opportunities[{$i}] must be an object.");
@@ -326,7 +335,7 @@ class CoachingAnalysisJob implements ShouldQueue
             },
             $items,
             array_keys($items),
-        ));
+        );
     }
 
     /**
@@ -434,7 +443,7 @@ class CoachingAnalysisJob implements ShouldQueue
                 return $label;
             }
         }
-        $firstToken = explode(' ', $needle)[0] ?? '';
+        $firstToken = explode(' ', $needle)[0];
         if ($firstToken !== '') {
             foreach ($labels as $label) {
                 if (str_contains(mb_strtolower($label), $firstToken)) {

@@ -32,8 +32,8 @@ class UserResource extends ApiResource
             'has_google_calendar' => $user->oauthConnections()->where('provider', 'google')->exists(),
             'has_microsoft_calendar' => $user->oauthConnections()->where('provider', 'microsoft')->exists(),
             'notetaker_config' => $notetakerConfig,
-            'created_at' => $user->created_at?->toIso8601String(),
-            'updated_at' => $user->updated_at?->toIso8601String(),
+            'created_at' => $user->created_at->toIso8601String(),
+            'updated_at' => $user->updated_at->toIso8601String(),
         ];
     }
 }

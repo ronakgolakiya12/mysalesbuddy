@@ -73,6 +73,7 @@ class NotetakerConfigTest extends TestCase
 
     public function test_upload_avatar_stores_file_and_returns_signed_url(): void
     {
+        config(['security.avatar_disk' => 's3']);
         Storage::fake('s3');
 
         $user = User::factory()->create();

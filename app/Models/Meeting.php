@@ -14,7 +14,27 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property string $id
+ * @property string $user_id
+ * @property string|null $recall_bot_id
+ * @property string $external_meeting_url
+ * @property string|null $title
+ * @property MeetingProvider $provider
+ * @property MeetingStatus $status
+ * @property MeetingScope $scope
+ * @property Carbon|null $scheduled_at
+ * @property Carbon|null $started_at
+ * @property Carbon|null $ended_at
+ * @property int|null $duration_seconds
+ * @property Carbon $created_at
+ * @property Carbon $updated_at
+ * @property Carbon|null $deleted_at
+ * @property-read User $user
+ * @property-read CoachingAnalysis|null $latestCoachingAnalysis
+ */
 class Meeting extends Model
 {
     /** @use HasFactory<\Database\Factories\MeetingFactory> */
@@ -45,21 +65,25 @@ class Meeting extends Model
         'ended_at' => 'datetime',
     ];
 
+    /** @return BelongsTo<User, $this> */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
+    /** @return HasMany<TranscriptSegment, $this> */
     public function transcriptSegments(): HasMany
     {
         return $this->hasMany(TranscriptSegment::class);
     }
 
+    /** @return HasMany<CoachingAnalysis, $this> */
     public function coachingAnalyses(): HasMany
     {
         return $this->hasMany(CoachingAnalysis::class);
     }
 
+    /** @return HasOne<CoachingAnalysis, $this> */
     public function latestCoachingAnalysis(): HasOne
     {
         return $this->hasOne(CoachingAnalysis::class)

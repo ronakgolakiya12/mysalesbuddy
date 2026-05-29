@@ -42,6 +42,7 @@ function buildAnalysis(overrides: Partial<CoachingAnalysis> = {}): CoachingAnaly
             opportunities: [],
         },
         triggered_by: 'manual',
+        provider_used: 'openai',
         status: 'completed',
         completed_at: '2026-01-01T00:00:00Z',
         failed_at: null,

@@ -247,22 +247,26 @@ onMounted(async () => {
         <div v-else-if="store.currentMeeting" class="grid grid-cols-1 gap-6 lg:grid-cols-5">
             <div class="space-y-4 lg:col-span-3 lg:max-h-[calc(100vh-12rem)] lg:overflow-y-auto">
                 <div class="rounded-lg border border-gray-200 bg-white p-6">
-                    <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                        <div>
-                            <div class="flex items-center gap-2 text-sm text-gray-500">
-                                <MeetingProviderIcon :provider="store.currentMeeting.provider" size="sm" />
-                                <span>{{ store.currentMeeting.external_meeting_url }}</span>
+                    <div class="flex flex-col gap-4">
+                        <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                            <div class="min-w-0 flex-1">
+                                <div class="flex items-center gap-2 text-sm text-gray-500">
+                                    <MeetingProviderIcon :provider="store.currentMeeting.provider" size="sm" />
+                                    <span class="truncate">{{ store.currentMeeting.external_meeting_url }}</span>
+                                </div>
+                                <h1 class="mt-2 break-words text-2xl font-semibold text-gray-900">
+                                    {{ store.currentMeeting.title || 'Untitled meeting' }}
+                                </h1>
                             </div>
-                            <h1 class="mt-2 text-2xl font-semibold text-gray-900">
-                                {{ store.currentMeeting.title || 'Untitled meeting' }}
-                            </h1>
+                            <div class="shrink-0">
+                                <MeetingStatusBadge :status="store.currentMeeting.status" />
+                            </div>
                         </div>
-                        <div class="flex items-center gap-2">
-                            <MeetingStatusBadge :status="store.currentMeeting.status" />
+                        <div class="flex flex-wrap items-center gap-2 sm:justify-end">
                             <button
                                 type="button"
                                 :disabled="store.currentMeeting.status !== 'ready' || exportQueued"
-                                class="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                 @click="handleExportPdf"
                             >
                                 <svg
@@ -293,9 +297,9 @@ onMounted(async () => {
                                 v-if="store.currentMeeting.status === 'scheduled'"
                                 type="button"
                                 :disabled="cancelling"
-                                class="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                                @click="handleCancelDispatch"
+                                class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg border border-amber-200 bg-white px-3 py-1.5 text-sm font-medium text-amber-700 hover:bg-amber-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                 data-testid="cancel-dispatch"
+                                @click="handleCancelDispatch"
                             >
                                 <svg
                                     v-if="cancelling"
@@ -325,7 +329,7 @@ onMounted(async () => {
                                 v-if="isDeletable"
                                 type="button"
                                 :disabled="deleting"
-                                class="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg border border-red-200 bg-white px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                 data-testid="delete-meeting"
                                 @click="handleDelete"
                             >

@@ -13,7 +13,7 @@ class LogFailedAuthAttempt
     public function handle(Failed $event): void
     {
         $credentials = $event->credentials;
-        $email = is_array($credentials) && isset($credentials['email']) && is_string($credentials['email'])
+        $email = isset($credentials['email']) && is_string($credentials['email'])
             ? $credentials['email']
             : null;
 

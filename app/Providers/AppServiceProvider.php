@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Providers;
 
 use App\Listeners\LogFailedAuthAttempt;
@@ -9,7 +11,11 @@ use App\Models\Meeting;
 use App\Policies\AppNotificationPolicy;
 use App\Policies\CoachingAnalysisPolicy;
 use App\Policies\MeetingPolicy;
+use App\Services\Ai\AiServiceFactory;
+use App\Services\Ai\AiServiceInterface;
 use App\Services\RecallAiService;
+use Gemini as GeminiFactory;
+use Gemini\Client as GeminiClient;
 use GuzzleHttp\Client;
 use Illuminate\Auth\Events\Failed;
 use Illuminate\Database\Eloquent\Model;
@@ -50,6 +56,17 @@ class AppServiceProvider extends ServiceProvider
                 ->withApiKey((string) config('services.openai.api_key'))
                 ->withHttpClient($httpClient)
                 ->make();
+        });
+
+        $this->app->singleton(GeminiClient::class, function (): GeminiClient {
+            return GeminiFactory::client((string) config('services.gemini.api_key'));
+        });
+
+        // Resolve coaching analysis to the provider currently selected by
+        // AI_PROVIDER. Bound (not singleton) so changing the env + clearing
+        // config picks up the new provider on the next request.
+        $this->app->bind(AiServiceInterface::class, function (): AiServiceInterface {
+            return AiServiceFactory::make();
         });
     }
 

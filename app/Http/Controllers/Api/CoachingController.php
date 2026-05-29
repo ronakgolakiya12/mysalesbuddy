@@ -7,11 +7,11 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Coaching\TriggerCoachingRequest;
 use App\Http\Resources\CoachingAnalysisResource;
+use App\Http\Resources\CoachingRatingResource;
 use App\Jobs\CoachingAnalysisJob;
 use App\Models\CoachingAnalysis;
 use App\Models\Meeting;
 use App\Services\AuditService;
-use App\Services\CoachingPromptService;
 use App\Support\Enums\AuditEventType;
 use App\Support\Enums\CoachingRating as CoachingRatingEnum;
 use App\Support\Enums\MeetingStatus;
@@ -25,10 +25,8 @@ class CoachingController extends Controller
 {
     use ApiResponses;
 
-    public function __construct(
-        private readonly CoachingPromptService $promptService,
-        private readonly AuditService $audit
-    ) {
+    public function __construct(private readonly AuditService $audit)
+    {
     }
 
     public function show(Request $request, Meeting $meeting): JsonResponse
@@ -85,12 +83,14 @@ class CoachingController extends Controller
 
         CoachingAnalysisJob::dispatch($meeting, $analysis->id, $mode->value, $dealContext);
 
-        return response()->json([
-            'data' => [
-                'analysis_id' => $analysis->id,
-                'status' => 'queued',
-            ],
-        ], 202);
+        // Return the full resource (with `status` derived as 'pending' from
+        // null completed_at/failed_at) so the frontend can render the pending
+        // spinner immediately. The job's later CoachingAnalysisCompleted broadcast
+        // refreshes the panel with the real output.
+        $analysis->load('ratings');
+
+        return $this->successResource(new CoachingAnalysisResource($analysis))
+            ->setStatusCode(202);
     }
 
     public function rateItem(Request $request, CoachingAnalysis $analysis): JsonResponse
@@ -125,6 +125,7 @@ class CoachingController extends Controller
             ]
         );
 
-        return $this->noContent();
+        return $this->successResource(new CoachingRatingResource($rating))
+            ->setStatusCode(200);
     }
 }

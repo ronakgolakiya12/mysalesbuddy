@@ -48,11 +48,11 @@ Route::middleware('auth:sanctum')->group(function () {
             ->name('oauth.google.redirect');
         Route::delete('/google', [OAuthController::class, 'disconnectGoogle'])->name('oauth.google.disconnect');
 
-        Route::get('/microsoft/redirect', static fn() => response()->json([
+        Route::get('/microsoft/redirect', static fn () => response()->json([
             'message' => 'Microsoft OAuth is not implemented.',
         ], 501))->middleware('throttle:10,1')->name('oauth.microsoft.redirect');
 
-        Route::delete('/microsoft', static fn() => response()->json([
+        Route::delete('/microsoft', static fn () => response()->json([
             'message' => 'Microsoft OAuth is not implemented.',
         ], 501))->name('oauth.microsoft.disconnect');
     });
@@ -98,4 +98,4 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 });
 
-Route::fallback(fn() => response()->json(['message' => 'API endpoint not found.'], 404));
+Route::fallback(fn () => response()->json(['message' => 'API endpoint not found.'], 404));

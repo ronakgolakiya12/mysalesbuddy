@@ -18,7 +18,9 @@ class CalendarSyncController extends Controller
 {
     use ApiResponses;
 
-    public function __construct(private readonly SyncCalendarMeetingsAction $action) {}
+    public function __construct(private readonly SyncCalendarMeetingsAction $action)
+    {
+    }
 
     public function sync(Request $request): JsonResponse
     {

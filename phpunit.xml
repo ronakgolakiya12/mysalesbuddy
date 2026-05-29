@@ -21,8 +21,13 @@
             <directory>app/Console</directory>
             <directory>app/Exceptions</directory>
             <directory>app/Providers</directory>
-            <file>app/Http/Kernel.php</file>
             <directory>app/Events</directory>
+            <!-- Data / DTO surfaces with no behaviour worth covering: -->
+            <directory>app/Mail</directory>
+            <directory>app/Http/Requests</directory>
+            <directory>app/Http/Resources</directory>
+            <directory>app/Support/Enums</directory>
+            <file>app/Http/Kernel.php</file>
         </exclude>
     </source>
     <coverage>

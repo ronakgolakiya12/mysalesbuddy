@@ -24,7 +24,8 @@ class SyncCalendarMeetingsAction
     public function __construct(
         private readonly CalendarService $calendar,
         private readonly AuditService $audit,
-    ) {}
+    ) {
+    }
 
     /**
      * @return array{imported: array<int, array<string, mixed>>, existing: array<int, array<string, mixed>>, skipped: array<int, array<string, mixed>>}

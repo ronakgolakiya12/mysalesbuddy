@@ -7,7 +7,7 @@ function buildStrength(overrides: Partial<CoachingStrength> = {}): CoachingStren
     return {
         title: 'Strong opening',
         detail: 'Established rapport quickly.',
-        evidence: { timestamp_ms: 60000, quote: 'Hello, how is your week going?' },
+        evidence: { speaker: 'Rep', timestamp_ms: 60000, quote: 'Hello, how is your week going?' },
         ...overrides,
     };
 }

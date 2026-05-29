@@ -1,6 +1,6 @@
 import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';
-import { AxiosError } from 'axios';
+import type { AxiosError } from 'axios';
 import { transcriptApi } from '@/api/transcript';
 import type { TranscriptSegment } from '@/types';
 

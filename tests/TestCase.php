@@ -1,11 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests;
 
 use App\Models\Meeting;
 use App\Models\NotetakerConfig;
 use App\Models\User;
-use App\Support\Enums\MeetingStatus;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 
 abstract class TestCase extends BaseTestCase

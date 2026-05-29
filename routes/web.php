@@ -1,12 +1,9 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use Laravel\Horizon\Horizon;
+declare(strict_types=1);
 
-Horizon::auth(function () {
-    return app()->environment('local');
-});
+use Illuminate\Support\Facades\Route;
 
 Route::view('/{any}', 'app')
-    ->where('any', '^(?!(api|horizon|broadcasting)(/.*)?$).*')
+    ->where('any', '^(?!(api|broadcasting)(/.*)?$).*')
     ->name('spa');

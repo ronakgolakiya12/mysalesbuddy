@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Exceptions\TranscriptTooLargeException;
+use App\Services\Ai\AiServiceInterface;
 use OpenAI\Client;
 use RuntimeException;
 
-class OpenAiService
+class OpenAiService implements AiServiceInterface
 {
     private const MAX_TOKENS = 100000;
 
@@ -29,9 +30,9 @@ class OpenAiService
 
                 return sprintf(
                     '[%s @ %s] %s',
-                    (string) ($segment['speaker_label'] ?? 'Unknown'),
+                    $segment['speaker_label'],
                     $stamp,
-                    (string) ($segment['body'] ?? '')
+                    $segment['body']
                 );
             })
             ->implode("\n");
@@ -46,7 +47,7 @@ class OpenAiService
             'model' => (string) config('services.openai.model', 'gpt-4o'),
             'response_format' => ['type' => 'json_object'],
             'temperature' => 0.3,
-            'max_tokens' => 2000,
+            'max_tokens' => 4096,
             'messages' => [
                 ['role' => 'system', 'content' => $prompt],
                 ['role' => 'user', 'content' => $userMessage],

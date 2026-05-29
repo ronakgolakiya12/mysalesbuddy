@@ -2,13 +2,14 @@ import { beforeEach, describe, expect, it, vi, afterEach } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
 import { flushPromises, mount, RouterLinkStub } from '@vue/test-utils';
 import { reactive } from 'vue';
+import type * as VueUseCore from '@vueuse/core';
 
 vi.mock('@/composables/useMeetingChannel', () => ({
     useMeetingChannel: vi.fn(),
 }));
 
 vi.mock('@vueuse/core', async () => {
-    const actual = await vi.importActual<typeof import('@vueuse/core')>('@vueuse/core');
+    const actual = await vi.importActual<typeof VueUseCore>('@vueuse/core');
     return {
         ...actual,
         useDebounceFn: <T extends (...args: unknown[]) => unknown>(fn: T) => fn,

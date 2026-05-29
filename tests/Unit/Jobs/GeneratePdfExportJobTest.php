@@ -22,6 +22,7 @@ class GeneratePdfExportJobTest extends TestCase
 
     public function test_generates_pdf_and_notifies_user(): void
     {
+        config(['security.pdf_disk' => 's3']);
         Storage::fake('s3');
         Queue::fake([SendNotificationEmailJob::class]);
         Mail::fake();

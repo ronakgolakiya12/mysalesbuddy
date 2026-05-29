@@ -12,12 +12,14 @@ use App\Models\CoachingPromptVersion;
 use App\Models\Meeting;
 use App\Models\TranscriptSegment;
 use App\Models\User;
+use App\Services\Ai\AiServiceInterface;
 use App\Services\AuditService;
 use App\Services\CoachingPromptService;
 use App\Services\OpenAiService;
 use App\Support\Enums\CoachingMode;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -363,6 +365,92 @@ class CoachingAnalysisJobTest extends TestCase
 
         $analysis->refresh();
         $this->assertSame(10, $analysis->overall_score);
+    }
+
+    public function test_job_uses_interface_not_concrete_class(): void
+    {
+        // Bind the interface directly so the factory is bypassed.
+        // If the job still depends on OpenAiService, this mock won't be called.
+        $this->app->bind(AiServiceInterface::class, function () {
+            $mock = Mockery::mock(AiServiceInterface::class);
+            $mock->shouldReceive('estimateTokens')->andReturn(50);
+            $mock->shouldReceive('analyzeTranscript')->andReturn($this->validOutput());
+
+            return $mock;
+        });
+
+        $user = User::factory()->create();
+        $this->activePrompt($user);
+        $meeting = $this->makeMeetingWithTranscript($user);
+        $analysis = $this->makeAnalysisShell($meeting);
+
+        (new CoachingAnalysisJob($meeting, $analysis->id, CoachingMode::TranscriptOnly->value))
+            ->handle(
+                app(AiServiceInterface::class),
+                app(CoachingPromptService::class),
+                app(AuditService::class)
+            );
+
+        $analysis->refresh();
+        $this->assertNotNull($analysis->completed_at);
+    }
+
+    public function test_provider_used_stored_on_analysis(): void
+    {
+        config(['services.ai.provider' => 'gemini']);
+
+        $this->mock(\App\Services\GeminiAiService::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('estimateTokens')->andReturn(50);
+            $mock->shouldReceive('analyzeTranscript')->andReturn($this->validOutput());
+        });
+
+        $user = User::factory()->create();
+        $this->activePrompt($user);
+        $meeting = $this->makeMeetingWithTranscript($user);
+        $analysis = $this->makeAnalysisShell($meeting);
+
+        (new CoachingAnalysisJob($meeting, $analysis->id, CoachingMode::TranscriptOnly->value))
+            ->handle(
+                app(AiServiceInterface::class),
+                app(CoachingPromptService::class),
+                app(AuditService::class)
+            );
+
+        $this->assertDatabaseHas('coaching_analyses', [
+            'id' => $analysis->id,
+            'provider_used' => 'gemini',
+        ]);
+    }
+
+    public function test_provider_logged_in_audit_on_completion(): void
+    {
+        config(['services.ai.provider' => 'openai']);
+
+        $this->mock(OpenAiService::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('estimateTokens')->andReturn(50);
+            $mock->shouldReceive('analyzeTranscript')->andReturn($this->validOutput());
+        });
+
+        $user = User::factory()->create();
+        $this->activePrompt($user);
+        $meeting = $this->makeMeetingWithTranscript($user);
+        $analysis = $this->makeAnalysisShell($meeting);
+
+        (new CoachingAnalysisJob($meeting, $analysis->id, CoachingMode::TranscriptOnly->value))
+            ->handle(
+                app(AiServiceInterface::class),
+                app(CoachingPromptService::class),
+                app(AuditService::class)
+            );
+
+        $log = DB::table('audit_log')
+            ->where('entity_id', $analysis->id)
+            ->where('event_type', 'coaching.completed')
+            ->first();
+
+        $this->assertNotNull($log);
+        $metadata = json_decode((string) $log->metadata_json, true);
+        $this->assertSame('openai', $metadata['ai_provider'] ?? null);
     }
 
     protected function tearDown(): void

@@ -24,7 +24,9 @@ trait ApiResponses
     }
 
     /**
-     * @param  LengthAwarePaginator<int, \Illuminate\Database\Eloquent\Model>  $paginator
+     * @template TModel of \Illuminate\Database\Eloquent\Model
+     *
+     * @param  LengthAwarePaginator<int, TModel>  $paginator
      * @param  class-string<JsonResource>  $resourceClass
      */
     protected function paginated(LengthAwarePaginator $paginator, string $resourceClass): JsonResponse

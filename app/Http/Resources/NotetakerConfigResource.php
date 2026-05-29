@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Http\Resources;
 
 use App\Models\NotetakerConfig;
-use App\Support\Enums\MeetingScope;
 use Illuminate\Http\Request;
 
 /**
@@ -28,11 +27,9 @@ class NotetakerConfigResource extends ApiResource
             'avatar_path' => $config->avatar_path,
             'avatar_url' => $config->avatarUrl(),
             'intro_message' => $config->intro_message,
-            'default_scope' => $config->default_scope instanceof MeetingScope
-                ? $config->default_scope->value
-                : (string) $config->default_scope,
-            'created_at' => $config->created_at?->toIso8601String(),
-            'updated_at' => $config->updated_at?->toIso8601String(),
+            'default_scope' => $config->default_scope->value,
+            'created_at' => $config->created_at->toIso8601String(),
+            'updated_at' => $config->updated_at->toIso8601String(),
         ];
     }
 }

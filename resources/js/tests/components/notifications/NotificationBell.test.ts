@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
+import type * as VueUseCore from '@vueuse/core';
 
 vi.mock('@/composables/useNotifications', () => ({
     useNotifications: vi.fn(),
@@ -18,7 +19,7 @@ vi.mock('@/api/notifications', () => ({
 }));
 
 vi.mock('@vueuse/core', async () => {
-    const actual = await vi.importActual<typeof import('@vueuse/core')>('@vueuse/core');
+    const actual = await vi.importActual<typeof VueUseCore>('@vueuse/core');
     return { ...actual, onClickOutside: vi.fn() };
 });
 

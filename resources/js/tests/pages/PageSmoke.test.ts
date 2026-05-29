@@ -2,10 +2,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
 import { mount, type ComponentMountingOptions } from '@vue/test-utils';
 import type { Component } from 'vue';
+import type * as VueRouter from 'vue-router';
+import type * as VueUseCore from '@vueuse/core';
 
 // Heavy router/echo/composable mocks live in setup.ts.
 vi.mock('vue-router', async () => {
-    const actual = await vi.importActual<typeof import('vue-router')>('vue-router');
+    const actual = await vi.importActual<typeof VueRouter>('vue-router');
     return {
         ...actual,
         useRouter: () => ({ push: vi.fn(), replace: vi.fn(), back: vi.fn() }),
@@ -141,7 +143,7 @@ vi.mock('@/api/auth', () => ({
 }));
 
 vi.mock('@vueuse/core', async () => {
-    const actual = await vi.importActual<typeof import('@vueuse/core')>('@vueuse/core');
+    const actual = await vi.importActual<typeof VueUseCore>('@vueuse/core');
     return {
         ...actual,
         useDebounceFn: <T extends (...args: unknown[]) => unknown>(fn: T) => fn,
