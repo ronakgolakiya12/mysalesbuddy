@@ -24,7 +24,9 @@ class MeetingController extends Controller
 {
     use ApiResponses;
 
-    public function __construct(private readonly AuditService $audit) {}
+    public function __construct(private readonly AuditService $audit)
+    {
+    }
 
     public function index(Request $request): JsonResponse
     {

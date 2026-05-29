@@ -16,8 +16,8 @@ interface Props {
 const props = defineProps<Props>();
 
 const emit = defineEmits<{
-    (e: 'dismiss', id: string): void;
-    (e: 'navigate'): void;
+    dismiss: [id: string];
+    navigate: [];
 }>();
 
 const isUnread = computed(() => props.notification.read_at === null);
@@ -80,11 +80,6 @@ const timeAgo = computed<string>(() => {
     if (diffDays < 7) return `${diffDays} day${diffDays === 1 ? '' : 's'} ago`;
     return new Date(props.notification.created_at).toLocaleDateString();
 });
-
-// Full timestamp shown on hover so the user can always see the exact moment.
-const exactTime = computed<string>(() =>
-    new Date(props.notification.created_at).toLocaleString(),
-);
 
 const internalActionTo = computed<{ name: string; params: Record<string, string> } | null>(() => {
     if (props.notification.type === 'pdf_ready') return null;

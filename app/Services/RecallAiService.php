@@ -11,7 +11,9 @@ use GuzzleHttp\Exception\GuzzleException;
 
 class RecallAiService
 {
-    public function __construct(private readonly Client $client) {}
+    public function __construct(private readonly Client $client)
+    {
+    }
 
     /**
      * @param  array<string, mixed>  $payload

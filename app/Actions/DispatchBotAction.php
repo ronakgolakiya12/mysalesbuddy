@@ -28,7 +28,8 @@ class DispatchBotAction
         private readonly RecallAiService $recall,
         private readonly AuditService $audit,
         private readonly StorageService $storage
-    ) {}
+    ) {
+    }
 
     public function execute(Meeting $meeting): Meeting
     {

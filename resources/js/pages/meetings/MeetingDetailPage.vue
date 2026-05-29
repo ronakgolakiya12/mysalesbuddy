@@ -298,8 +298,8 @@ onMounted(async () => {
                                 type="button"
                                 :disabled="cancelling"
                                 class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg border border-amber-200 bg-white px-3 py-1.5 text-sm font-medium text-amber-700 hover:bg-amber-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                                @click="handleCancelDispatch"
                                 data-testid="cancel-dispatch"
+                                @click="handleCancelDispatch"
                             >
                                 <svg
                                     v-if="cancelling"
