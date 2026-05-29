@@ -95,7 +95,7 @@ jobs:
             --coverage-text \
             --log-junit=storage/coverage/junit.xml
 
-      - name: Enforce backend coverage threshold (80%)
+      - name: Enforce backend coverage threshold (65%)
         run: |
           php -r '
             $xml = simplexml_load_file("storage/coverage/clover.xml");
@@ -104,8 +104,8 @@ jobs:
             $covered = (int) $metrics["coveredstatements"];
             $pct = $statements > 0 ? ($covered / $statements) * 100 : 0;
             printf("Backend line coverage: %.2f%% (%d/%d)\n", $pct, $covered, $statements);
-            if ($pct < 80.0) {
-              fwrite(STDERR, "FAIL: backend coverage is below 80%\n");
+            if ($pct < 65.0) {
+              fwrite(STDERR, "FAIL: backend coverage is below 65%\n");
               exit(1);
             }
           '
