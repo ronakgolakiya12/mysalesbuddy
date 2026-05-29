@@ -23,8 +23,8 @@ class CoachingPromptVersionResource extends ApiResource
         return [
             'id' => $version->id,
             'prompt_text' => $version->prompt_text,
-            'is_active' => (bool) $version->is_active,
-            'created_at' => $version->created_at?->toIso8601String(),
+            'is_active' => $version->is_active,
+            'created_at' => $version->created_at->toIso8601String(),
         ];
     }
 }

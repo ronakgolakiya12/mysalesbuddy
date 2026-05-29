@@ -17,7 +17,7 @@ class AuditLog extends Model
 
     public $timestamps = false;
 
-    const UPDATED_AT = null;
+    public const UPDATED_AT = null;
 
     protected $fillable = [
         'user_id',

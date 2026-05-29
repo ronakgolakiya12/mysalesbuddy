@@ -35,7 +35,7 @@ class CalendarService
             'maxResults' => 50,
         ]);
 
-        $userEmail = strtolower((string) $connection->user?->email);
+        $userEmail = strtolower($connection->user->email);
         $mapped = [];
 
         foreach ($eventsList->getItems() as $event) {
@@ -46,23 +46,22 @@ class CalendarService
                 continue;
             }
 
-            $organiserEmail = $event->getOrganizer()?->getEmail();
-            $isOrganiser = $userEmail !== '' && $organiserEmail !== null
-                && strtolower((string) $organiserEmail) === $userEmail;
+            $organiserEmail = $event->getOrganizer()->getEmail();
+            $isOrganiser = $userEmail !== '' && strtolower($organiserEmail) === $userEmail;
 
             $start = $event->getStart();
             $end = $event->getEnd();
 
             $mapped[] = [
                 'id' => (string) $event->getId(),
-                'title' => (string) ($event->getSummary() ?? 'Untitled event'),
+                'title' => $event->getSummary() ?: 'Untitled event',
                 'description' => $event->getDescription(),
-                'start_at' => $start !== null
-                    ? CarbonImmutable::parse((string) ($start->getDateTime() ?? $start->getDate()))->utc()->toIso8601String()
-                    : null,
-                'end_at' => $end !== null
-                    ? CarbonImmutable::parse((string) ($end->getDateTime() ?? $end->getDate()))->utc()->toIso8601String()
-                    : null,
+                'start_at' => CarbonImmutable::parse(
+                    (string) ($start->getDateTime() ?: $start->getDate())
+                )->utc()->toIso8601String(),
+                'end_at' => CarbonImmutable::parse(
+                    (string) ($end->getDateTime() ?: $end->getDate())
+                )->utc()->toIso8601String(),
                 'meeting_url' => $meetingUrl,
                 'provider' => $this->detectProvider($meetingUrl),
                 'organiser_email' => $organiserEmail,
@@ -76,12 +75,12 @@ class CalendarService
     private function extractMeetingUrl(Event $event): ?string
     {
         $hangout = $event->getHangoutLink();
-        if (is_string($hangout) && $hangout !== '') {
+        if ($hangout !== '') {
             return $hangout;
         }
 
         $description = $event->getDescription();
-        if (is_string($description) && $description !== '') {
+        if ($description !== '') {
             if (preg_match('#https?://meet\.google\.com/[A-Za-z0-9\-_?=&]+#i', $description, $matches) === 1) {
                 return $matches[0];
             }

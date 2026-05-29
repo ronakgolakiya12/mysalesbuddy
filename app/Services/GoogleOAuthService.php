@@ -53,8 +53,8 @@ class GoogleOAuthService
     {
         $tokens = $this->client->fetchAccessTokenWithAuthCode($code);
 
-        if (! is_array($tokens) || isset($tokens['error'])) {
-            $message = is_array($tokens) && isset($tokens['error_description'])
+        if (isset($tokens['error'])) {
+            $message = isset($tokens['error_description'])
                 ? (string) $tokens['error_description']
                 : 'Failed to exchange authorization code for tokens.';
 
@@ -78,8 +78,8 @@ class GoogleOAuthService
 
         $tokens = $this->client->fetchAccessTokenWithRefreshToken($connection->refresh_token);
 
-        if (! is_array($tokens) || isset($tokens['error'])) {
-            $message = is_array($tokens) && isset($tokens['error_description'])
+        if (isset($tokens['error'])) {
+            $message = isset($tokens['error_description'])
                 ? (string) $tokens['error_description']
                 : 'Failed to refresh access token.';
 
@@ -93,7 +93,7 @@ class GoogleOAuthService
     {
         $token = $connection->access_token;
 
-        if ($token === null || $token === '') {
+        if ($token === '') {
             return;
         }
 

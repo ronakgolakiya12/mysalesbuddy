@@ -158,7 +158,7 @@ jobs:
           php-version: '8.3'
 
       - name: Composer audit
-        run: composer audit --no-interaction --abandoned=ignore
+        run: composer audit --locked --no-interaction --abandoned=ignore
 
       - uses: actions/setup-node@v4
         with:

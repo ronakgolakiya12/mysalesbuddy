@@ -144,10 +144,6 @@ class RecallAiService
         $normalised = [];
 
         foreach ($raw as $entry) {
-            if (! is_array($entry)) {
-                continue;
-            }
-
             // Already legacy shape — pass through.
             if (isset($entry['speaker']) && isset($entry['words'])) {
                 $normalised[] = $entry;

@@ -11,7 +11,20 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property string $id
+ * @property string $user_id
+ * @property OAuthProvider $provider
+ * @property string $access_token
+ * @property string|null $refresh_token
+ * @property Carbon|null $token_expires_at
+ * @property array<int, string>|null $scopes
+ * @property Carbon $created_at
+ * @property Carbon $updated_at
+ * @property-read User $user
+ */
 class OauthConnection extends Model
 {
     /** @use HasFactory<\Database\Factories\OauthConnectionFactory> */
@@ -35,6 +48,7 @@ class OauthConnection extends Model
         'scopes' => 'array',
     ];
 
+    /** @return BelongsTo<User, $this> */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
@@ -51,11 +65,19 @@ class OauthConnection extends Model
             && $this->token_expires_at->lte(now()->addMinutes($minutes));
     }
 
+    /**
+     * @param  Builder<OauthConnection>  $query
+     * @return Builder<OauthConnection>
+     */
     public function scopeForProvider(Builder $query, OAuthProvider|string $provider): Builder
     {
         return $query->where('provider', $provider instanceof OAuthProvider ? $provider->value : $provider);
     }
 
+    /**
+     * @param  Builder<OauthConnection>  $query
+     * @return Builder<OauthConnection>
+     */
     public function scopeGoogle(Builder $query): Builder
     {
         return $query->where('provider', OAuthProvider::Google->value);

@@ -64,7 +64,7 @@ class DispatchBotAction
                 ->where('user_id', $meeting->user_id)
                 ->first();
 
-            $displayName = $config?->display_name ?? 'Sales Buddy';
+            $displayName = $config !== null ? $config->display_name : 'Sales Buddy';
 
             $payload = [
                 'meeting_url' => $meeting->external_meeting_url,
@@ -190,9 +190,6 @@ class DispatchBotAction
     {
         $srcW = imagesx($source);
         $srcH = imagesy($source);
-        if ($srcW <= 0 || $srcH <= 0) {
-            return null;
-        }
 
         $scale = min(self::AVATAR_TARGET_WIDTH / $srcW, self::AVATAR_TARGET_HEIGHT / $srcH);
         $scaledW = max(1, (int) round($srcW * $scale));

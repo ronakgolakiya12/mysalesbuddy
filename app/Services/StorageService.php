@@ -156,10 +156,7 @@ class StorageService
         // S3-style disks generate their own pre-signed URLs that don't go through Laravel.
         if (in_array($driver, self::NATIVELY_SIGNABLE_DRIVERS, true)) {
             try {
-                $filesystem = Storage::disk($disk);
-                if (method_exists($filesystem, 'temporaryUrl')) {
-                    return $filesystem->temporaryUrl($path, now()->addMinutes($minutes));
-                }
+                return Storage::disk($disk)->temporaryUrl($path, now()->addMinutes($minutes));
             } catch (Throwable $e) {
                 Log::warning('Failed to generate signed URL.', [
                     'disk' => $disk,

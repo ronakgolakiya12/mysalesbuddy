@@ -27,7 +27,7 @@ class CoachingAnalysisResource extends ApiResource
             'id' => $analysis->id,
             'meeting_id' => $analysis->meeting_id,
             'prompt_version_id' => $analysis->prompt_version_id,
-            'mode' => $mode instanceof CoachingMode ? $mode->value : (string) $mode,
+            'mode' => $mode instanceof CoachingMode ? $mode->value : $mode,
             'deal_context' => $analysis->deal_context,
             'overall_score' => $analysis->overall_score,
             'talk_time_rep' => $analysis->talk_time_rep,
@@ -39,7 +39,7 @@ class CoachingAnalysisResource extends ApiResource
             'completed_at' => $analysis->completed_at?->toIso8601String(),
             'failed_at' => $analysis->failed_at?->toIso8601String(),
             'failure_reason' => $analysis->failure_reason,
-            'created_at' => $analysis->created_at?->toIso8601String(),
+            'created_at' => $analysis->created_at->toIso8601String(),
             'ratings' => CoachingRatingResource::collection($this->whenLoaded('ratings')),
         ];
     }

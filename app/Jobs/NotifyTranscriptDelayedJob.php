@@ -30,7 +30,7 @@ class NotifyTranscriptDelayedJob implements ShouldQueue
     public function handle(NotificationService $notifications): void
     {
         $meeting = $this->meeting->fresh();
-        if ($meeting === null || $meeting->user === null) {
+        if ($meeting === null) {
             return;
         }
 

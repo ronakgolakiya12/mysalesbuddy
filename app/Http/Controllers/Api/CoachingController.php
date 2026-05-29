@@ -12,7 +12,6 @@ use App\Jobs\CoachingAnalysisJob;
 use App\Models\CoachingAnalysis;
 use App\Models\Meeting;
 use App\Services\AuditService;
-use App\Services\CoachingPromptService;
 use App\Support\Enums\AuditEventType;
 use App\Support\Enums\CoachingRating as CoachingRatingEnum;
 use App\Support\Enums\MeetingStatus;
@@ -26,10 +25,8 @@ class CoachingController extends Controller
 {
     use ApiResponses;
 
-    public function __construct(
-        private readonly CoachingPromptService $promptService,
-        private readonly AuditService $audit
-    ) {
+    public function __construct(private readonly AuditService $audit)
+    {
     }
 
     public function show(Request $request, Meeting $meeting): JsonResponse

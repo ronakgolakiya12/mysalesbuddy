@@ -175,7 +175,7 @@ class MeetingController extends Controller
             }
         } else {
             $createdAt = $meeting->created_at;
-            if ($createdAt !== null && abs($createdAt->diffInSeconds($now)) > 30) {
+            if (abs($createdAt->diffInSeconds($now)) > 30) {
                 return $this->error(
                     'Cancellation window has expired (30 seconds after creation for immediate meetings).',
                     422,

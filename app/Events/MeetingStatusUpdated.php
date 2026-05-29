@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Events;
 
 use App\Models\Meeting;
-use App\Support\Enums\MeetingStatus;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
@@ -40,12 +39,10 @@ class MeetingStatusUpdated implements ShouldBroadcast
      */
     public function broadcastWith(): array
     {
-        $status = $this->meeting->status;
-
         return [
             'meeting_id' => $this->meeting->id,
-            'status' => $status instanceof MeetingStatus ? $status->value : (string) $status,
-            'updated_at' => $this->meeting->updated_at?->toIso8601String(),
+            'status' => $this->meeting->status->value,
+            'updated_at' => $this->meeting->updated_at->toIso8601String(),
         ];
     }
 }

@@ -8,7 +8,16 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property string $id
+ * @property string $user_id
+ * @property string $type
+ * @property array<string, mixed>|null $payload_json
+ * @property Carbon|null $read_at
+ * @property Carbon $created_at
+ */
 class AppNotification extends Model
 {
     /** @use HasFactory<\Database\Factories\AppNotificationFactory> */
@@ -19,7 +28,7 @@ class AppNotification extends Model
 
     public $timestamps = false;
 
-    const UPDATED_AT = null;
+    public const UPDATED_AT = null;
 
     protected $fillable = [
         'user_id',
@@ -34,6 +43,7 @@ class AppNotification extends Model
         'created_at' => 'datetime',
     ];
 
+    /** @return BelongsTo<User, $this> */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

@@ -30,9 +30,9 @@ class OpenAiService implements AiServiceInterface
 
                 return sprintf(
                     '[%s @ %s] %s',
-                    (string) ($segment['speaker_label'] ?? 'Unknown'),
+                    $segment['speaker_label'],
                     $stamp,
-                    (string) ($segment['body'] ?? '')
+                    $segment['body']
                 );
             })
             ->implode("\n");

@@ -10,8 +10,19 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Carbon;
 use Laravel\Sanctum\HasApiTokens;
 
+/**
+ * @property string $id
+ * @property string $name
+ * @property string $email
+ * @property string $password
+ * @property Carbon|null $email_verified_at
+ * @property array<string, array{in_app: bool, email: bool}>|null $notification_preferences
+ * @property Carbon $created_at
+ * @property Carbon $updated_at
+ */
 class User extends Authenticatable
 {
     use HasApiTokens;
@@ -61,7 +72,7 @@ class User extends Authenticatable
     public function getNotificationPreference(string $type): array
     {
         $defaults = $this->defaultNotificationPreferences();
-        $stored = is_array($this->notification_preferences) ? $this->notification_preferences : [];
+        $stored = $this->notification_preferences ?? [];
 
         $default = $defaults[$type] ?? ['in_app' => true, 'email' => false];
         $value = $stored[$type] ?? [];
@@ -82,31 +93,37 @@ class User extends Authenticatable
         return $this->getNotificationPreference($type)['in_app'];
     }
 
+    /** @return HasOne<NotetakerConfig, $this> */
     public function notetakerConfig(): HasOne
     {
         return $this->hasOne(NotetakerConfig::class);
     }
 
+    /** @return HasMany<OauthConnection, $this> */
     public function oauthConnections(): HasMany
     {
         return $this->hasMany(OauthConnection::class);
     }
 
+    /** @return HasMany<Meeting, $this> */
     public function meetings(): HasMany
     {
         return $this->hasMany(Meeting::class);
     }
 
+    /** @return HasMany<AppNotification, $this> */
     public function notifications(): HasMany
     {
         return $this->hasMany(AppNotification::class);
     }
 
+    /** @return HasMany<AuditLog, $this> */
     public function auditLogs(): HasMany
     {
         return $this->hasMany(AuditLog::class);
     }
 
+    /** @return HasMany<CoachingPromptVersion, $this> */
     public function coachingPromptVersions(): HasMany
     {
         return $this->hasMany(CoachingPromptVersion::class);

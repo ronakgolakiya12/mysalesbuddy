@@ -10,7 +10,25 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property string $id
+ * @property string $meeting_id
+ * @property string|null $prompt_version_id
+ * @property CoachingMode|string $mode
+ * @property string|null $deal_context
+ * @property int|null $overall_score
+ * @property int|null $talk_time_rep
+ * @property int|null $talk_time_prospect
+ * @property array<string, mixed>|null $output_json
+ * @property string $triggered_by
+ * @property string|null $provider_used
+ * @property Carbon|null $completed_at
+ * @property Carbon|null $failed_at
+ * @property string|null $failure_reason
+ * @property Carbon $created_at
+ */
 class CoachingAnalysis extends Model
 {
     /** @use HasFactory<\Database\Factories\CoachingAnalysisFactory> */
@@ -19,7 +37,7 @@ class CoachingAnalysis extends Model
 
     public $timestamps = false;
 
-    const UPDATED_AT = null;
+    public const UPDATED_AT = null;
 
     protected $fillable = [
         'meeting_id',
@@ -45,16 +63,19 @@ class CoachingAnalysis extends Model
         'created_at' => 'datetime',
     ];
 
+    /** @return BelongsTo<Meeting, $this> */
     public function meeting(): BelongsTo
     {
         return $this->belongsTo(Meeting::class);
     }
 
+    /** @return BelongsTo<CoachingPromptVersion, $this> */
     public function promptVersion(): BelongsTo
     {
         return $this->belongsTo(CoachingPromptVersion::class, 'prompt_version_id');
     }
 
+    /** @return HasMany<CoachingRating, $this> */
     public function ratings(): HasMany
     {
         return $this->hasMany(CoachingRating::class);

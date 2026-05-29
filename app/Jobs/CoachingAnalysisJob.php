@@ -242,7 +242,7 @@ class CoachingAnalysisJob implements ShouldQueue
             'objections' => 'is_array',
         ], 'objection_handling');
 
-        $oh['objections'] = array_values(array_map(
+        $oh['objections'] = array_map(
             function ($obj, int $i): array {
                 if (! is_array($obj)) {
                     throw new CoachingOutputInvalidException("objection_handling.objections[{$i}] must be an object.");
@@ -260,9 +260,9 @@ class CoachingAnalysisJob implements ShouldQueue
 
                 return $obj;
             },
-            $oh['objections'],
-            array_keys($oh['objections']),
-        ));
+            array_values($oh['objections']),
+            array_keys(array_values($oh['objections'])),
+        );
 
         return $oh;
     }
@@ -278,7 +278,9 @@ class CoachingAnalysisJob implements ShouldQueue
             throw new CoachingOutputInvalidException("strengths must contain 2-4 items, got {$count}.");
         }
 
-        return array_values(array_map(
+        $items = array_values($items);
+
+        return array_map(
             function ($item, int $i): array {
                 if (! is_array($item)) {
                     throw new CoachingOutputInvalidException("strengths[{$i}] must be an object.");
@@ -297,7 +299,7 @@ class CoachingAnalysisJob implements ShouldQueue
             },
             $items,
             array_keys($items),
-        ));
+        );
     }
 
     /**
@@ -311,7 +313,9 @@ class CoachingAnalysisJob implements ShouldQueue
             throw new CoachingOutputInvalidException("opportunities must contain 2-4 items, got {$count}.");
         }
 
-        return array_values(array_map(
+        $items = array_values($items);
+
+        return array_map(
             function ($item, int $i): array {
                 if (! is_array($item)) {
                     throw new CoachingOutputInvalidException("opportunities[{$i}] must be an object.");
@@ -331,7 +335,7 @@ class CoachingAnalysisJob implements ShouldQueue
             },
             $items,
             array_keys($items),
-        ));
+        );
     }
 
     /**
@@ -439,7 +443,7 @@ class CoachingAnalysisJob implements ShouldQueue
                 return $label;
             }
         }
-        $firstToken = explode(' ', $needle)[0] ?? '';
+        $firstToken = explode(' ', $needle)[0];
         if ($firstToken !== '') {
             foreach ($labels as $label) {
                 if (str_contains(mb_strtolower($label), $firstToken)) {

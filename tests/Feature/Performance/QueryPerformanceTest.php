@@ -34,7 +34,7 @@ class QueryPerformanceTest extends TestCase
         DB::statement('ANALYZE meetings');
 
         $plan = DB::select(
-            "EXPLAIN (ANALYZE, FORMAT TEXT) SELECT * FROM meetings WHERE user_id = ? AND status = ? ORDER BY created_at DESC LIMIT 20",
+            'EXPLAIN (ANALYZE, FORMAT TEXT) SELECT * FROM meetings WHERE user_id = ? AND status = ? ORDER BY created_at DESC LIMIT 20',
             [$user->id, MeetingStatus::Ready->value]
         );
 
